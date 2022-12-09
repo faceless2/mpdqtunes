@@ -42,6 +42,10 @@ int mpd_connect(struct mycon *con, const char *host, const int port) {
     perror("connect");
     return 1;
   }
+  int optval = 1;
+  if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof(optval))) {
+    perror("setsockopt");
+  }
   con->mpdfd = fd;
   return 0;
 }
@@ -109,7 +113,7 @@ void mpd_poll(struct mycon *con) {
           }
           if (!con->binbuf) {
             // Full line other than "binary: n" - send it
-            mg_ws_send(con->mgcon, con->buf, con->off, WEBSOCKET_OP_TEXT);
+            mg_ws_send(con->mgcon, con->buf, con->off - 1, WEBSOCKET_OP_TEXT);
             con->off = 0;
           }
         }
