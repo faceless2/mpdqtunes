@@ -4,8 +4,10 @@
 #include <stdio.h>
 #include "mongoose.h"
 
+//#define DEBUG 1
 
 #define MAXLINE 512     // Max possible length of single line from MPD
+#define TIMEOUT 50      // Seconds between ping
 
 static char *mpdhost = "127.0.0.1";
 static int mpdport = 6600;
@@ -18,7 +20,8 @@ struct mycon {
   int mpdfd;
   char buf[MAXLINE];
   char *binbuf;
-  int off, binoff, binlen;
+  int off, binoff, binlen, pinged;
+  time_t ping;
   struct mycon *next;
 };
 
@@ -47,6 +50,7 @@ int mpd_connect(struct mycon *con, const char *host, const int port) {
     perror("setsockopt");
   }
   con->mpdfd = fd;
+  con->ping = time(NULL);
   return 0;
 }
 
@@ -61,11 +65,15 @@ int mpd_disconnect(struct mycon *con) {
 int mpd_send(struct mycon *con, char *buf, int len) {
   if (con->mpdfd) {
     int oldv = buf[len];
+#if DEBUG
+    printf("TX \"%s\"\n", buf);
+#endif
     buf[len] = '\n';
     if (write(con->mpdfd, buf, len + 1) != len + 1) {
       perror("write");
       return 1;
     }
+    con->ping = time(NULL);
     buf[len] = oldv;
     return 0;
   }
@@ -78,11 +86,16 @@ int mpd_send(struct mycon *con, char *buf, int len) {
  */
 void mpd_poll(struct mycon *con) {
   static char buf[256];
-  int len = read(con->mpdfd, buf, sizeof(buf));
+  memset(buf, 0, sizeof(buf));
+  int len = read(con->mpdfd, buf, sizeof(buf) - 1);
 
   if (len < 0) {
     perror("read");
   } else if (len > 0) {
+#if DEBUG
+    printf("RX \"%s\"\n", buf);
+#endif
+    con->ping = time(NULL);
     for (int i=0;i<len;i++) {
       char c = buf[i];
       if (con->binbuf) {
@@ -113,7 +126,12 @@ void mpd_poll(struct mycon *con) {
           }
           if (!con->binbuf) {
             // Full line other than "binary: n" - send it
-            mg_ws_send(con->mgcon, con->buf, con->off - 1, WEBSOCKET_OP_TEXT);
+            if (con->pinged) {
+              // keep quiet about OK in response tp ping
+              con->pinged = 0;
+            } else {
+              mg_ws_send(con->mgcon, con->buf, con->off - 1, WEBSOCKET_OP_TEXT);
+            }
             con->off = 0;
           }
         }
@@ -226,9 +244,16 @@ int main(int argc, char **argv) {
   int fdcount = 0;
   for (;;) {
     mg_mgr_poll(&mgr, 200);
+    time_t now = time(NULL);
     int t = 0;
     for (struct mycon *mycon=root;mycon;mycon=mycon->next) {
       t++;
+      if (now - mycon->ping > TIMEOUT) {
+        char tbuf[5];
+        strcpy(tbuf, "ping");
+        mycon->pinged = 1;
+        mpd_send(mycon, tbuf, 5);
+      }
     }
     if (t) {
       if (t > fdcount) {
