@@ -15,39 +15,8 @@ Any HTTP requests for paths other than `/ws` are served from the filesystem.
 
 Thanks to the [Moongoose](https://mongoose.ws) project for all the web-server bits.
 
-## Example communications
-<pre><code>
-<b><i>proxy-listservers</i></b>
-name: server1[20071]
-host: server1.local
-port: 6600
-name: server2[18063]
-host: server2.local
-port: 6600
-OK
-<b><i>proxy-connect "server1[20071]"</i></b>
-OK MPD 0.24.0
-<b><i>stats</i></b>
-uptime: 22
-playtime: 0
-artists: 1
-albums: 10
-songs: 134
-db_playtime: 34557
-db_update: 1671021242
-OK
-<b><i>proxy-connect "server2[18063]"</i></b>
-OK MPD 0.24.0
-<b><i>stats</i></b>
-uptime: 74218
-playtime: 7521
-artists: 1386
-albums: 510
-songs: 6713
-db_playtime: 1757429
-db_update: 1670512904
-OK
-</code></pre>
+## Building
+Type `make`. To build with Zeroconf support, install `libavahi-client-dev` before you type `make`
 
 
 ## Example
@@ -107,5 +76,37 @@ Run `make`, Put this file in the current directory as `index.html`, run `mpd`, r
 </html>
 ```
 
-## Building
-Type `make`. To build with Zeroconf support, install `libavahi-client-dev` then type `make`
+## Example communications
+<pre><code>
+<b><i>proxy-listservers</i></b>
+name: server1[20071]
+host: server1.local
+port: 6600
+name: server2[18063]
+host: server2.local
+port: 6600
+OK
+<b><i>proxy-connect "server1[20071]"</i></b>
+OK MPD 0.24.0
+<b><i>stats</i></b>
+uptime: 22
+playtime: 0
+artists: 1
+albums: 10
+songs: 134
+db_playtime: 34557
+db_update: 1671021242
+OK
+<b><i>proxy-connect "server2[18063]"</i></b>
+OK MPD 0.24.0
+<b><i>stats</i></b>
+uptime: 74218
+playtime: 7521
+artists: 1386
+albums: 510
+songs: 6713
+db_playtime: 1757429
+db_update: 1670512904
+OK
+</code></pre>
+
