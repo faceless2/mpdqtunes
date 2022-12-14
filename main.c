@@ -107,11 +107,11 @@ int mpd_disconnect(struct mycon *mycon) {
 int mpd_send(struct mycon *mycon, char *buf, int len) {
   if (!strcmp(buf, "proxy-listservers")) {
     for (struct myhost *h = hostroot;h;h=h->next) {
-      mg_ws_printf(mycon->mgcon, WEBSOCKET_OP_TEXT, "name: %s\n", h->name);
-      mg_ws_printf(mycon->mgcon, WEBSOCKET_OP_TEXT, "host: %s\n", h->host);
-      mg_ws_printf(mycon->mgcon, WEBSOCKET_OP_TEXT, "port: %d\n", h->port);
+      mg_ws_printf(mycon->mgcon, WEBSOCKET_OP_TEXT, "name: %s", h->name);
+      mg_ws_printf(mycon->mgcon, WEBSOCKET_OP_TEXT, "host: %s", h->host);
+      mg_ws_printf(mycon->mgcon, WEBSOCKET_OP_TEXT, "port: %d", h->port);
     }
-    mg_ws_printf(mycon->mgcon, WEBSOCKET_OP_TEXT, "OK\n");
+    mg_ws_printf(mycon->mgcon, WEBSOCKET_OP_TEXT, "OK");
   } else if (!strncmp(buf, "proxy-connect ", 14) && (buf[14] == '"' || buf[14] == '\'') && buf[len-1] == buf[14]) {
     char *name = buf + 15;
     buf[len - 1] = 0;
@@ -119,7 +119,7 @@ int mpd_send(struct mycon *mycon, char *buf, int len) {
       if (!strcmp(name, h->name)) {
         mpd_disconnect(mycon);
         if (mpd_connect(mycon, h->host, h->port)) {
-          mg_ws_printf(mycon->mgcon, WEBSOCKET_OP_TEXT, "ACK [0@0] {proxy-connect} connection to name \"%s\" host \"%s\" port %d failed: %s\n", h->name, h->host, h->port, strerror(errno));
+          mg_ws_printf(mycon->mgcon, WEBSOCKET_OP_TEXT, "ACK [0@0] {proxy-connect} connection to name \"%s\" host \"%s\" port %d failed: %s", h->name, h->host, h->port, strerror(errno));
           mpd_disconnect(mycon);
         }
         name = NULL;
@@ -127,12 +127,12 @@ int mpd_send(struct mycon *mycon, char *buf, int len) {
       }
     }
     if (name) {
-      mg_ws_printf(mycon->mgcon, WEBSOCKET_OP_TEXT, "ACK [0@0] {proxy-connect} no server name \"%s\"\n", name);
+      mg_ws_printf(mycon->mgcon, WEBSOCKET_OP_TEXT, "ACK [0@0] {proxy-connect} no server name \"%s\"", name);
     }
   } else if (!mycon->mpdfd) {
     int oldv = buf[len];
     buf[len] = 0;
-    mg_ws_printf(mycon->mgcon, WEBSOCKET_OP_TEXT, "ACK [0@0] {%s} disconnected\n", buf);
+    mg_ws_printf(mycon->mgcon, WEBSOCKET_OP_TEXT, "ACK [0@0] {%s} disconnected", buf);
     buf[len] = oldv;
   } else {
     int oldv = buf[len];
