@@ -86,10 +86,10 @@ int mpd_connect(struct mycon *con, const char *host, const int port) {
 
   // Connect to socket with 3s timeout
   fd_set fdset;
-  struct timeval tv = {.tv_sec=3, .tv_usec=0 };
   FD_ZERO(&fdset);
   FD_SET(fd, &fdset);
   int r;
+  struct timeval tv = {.tv_sec=3, .tv_usec=0 };
   connect(fd, (struct sockaddr *)addr, sizeof(struct sockaddr_in));
   free(addr);
   if (errno == EINPROGRESS) {
@@ -189,7 +189,7 @@ void mpd_poll(struct mycon *mycon) {
   if (!mycon->mpdfd) {
     return;
   }
-  static char buf[256];
+  static char buf[32768];
   memset(buf, 0, sizeof(buf));
   int len = read(mycon->mpdfd, buf, sizeof(buf) - 1);
 
@@ -210,8 +210,11 @@ void mpd_poll(struct mycon *mycon) {
           mg_ws_send(mycon->mgcon, mycon->binbuf, mycon->binlen, WEBSOCKET_OP_BINARY);
           free(mycon->binbuf);
           mycon->binbuf = NULL;
-          mycon->binoff = mycon->binlen = 0;
+          mycon->binoff = 0;
+          mycon->binlen = 1;    // we need to eat a byte
         }
+      } else if (mycon->binlen) {
+        mycon->binlen--;        // eat byte
       } else {
         // Reading a text message
         mycon->buf[mycon->off++] = c;
@@ -237,8 +240,8 @@ void mpd_poll(struct mycon *mycon) {
             } else {
               mg_ws_send(mycon->mgcon, mycon->buf, mycon->off - 1, WEBSOCKET_OP_TEXT);
             }
-            mycon->off = 0;
           }
+          mycon->off = 0;
         }
       }
     }
