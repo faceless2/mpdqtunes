@@ -93,12 +93,10 @@ int mpd_connect(struct mycon *con, const char *host, const int port) {
   connect(fd, (struct sockaddr *)addr, sizeof(struct sockaddr_in));
   free(addr);
   if (errno == EINPROGRESS) {
-    printf("selecting\n");
     if ((r=select(fd + 1, NULL, &fdset, NULL, &tv)) == 1) {
-      printf("selecting ret 1\n");
       socklen_t len = sizeof(r);
       if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &r, &len)) {
-        perror("setsockopt");
+        perror("getsockopt");
         return 1;
       }
       if (r) {
