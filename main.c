@@ -49,6 +49,7 @@ int mpd_connect(struct mycon *con, const char *host, const int port) {
     perror("socket");
     return 1;
   }
+  fcntl(fd, F_SETFL, O_NONBLOCK);
 
   struct addrinfo *addrinfo;
   if (getaddrinfo(host, NULL, NULL, &addrinfo)) {
@@ -82,13 +83,44 @@ int mpd_connect(struct mycon *con, const char *host, const int port) {
     fprintf(stderr, "can't resolve \"%s\"", host);
     return 1;
   }
-  if (connect(fd, (struct sockaddr *)addr, sizeof(struct sockaddr_in)) < 0) {
+
+  // Connect to socket with 3s timeout
+  fd_set fdset;
+  struct timeval tv = {.tv_sec=3, .tv_usec=0 };
+  FD_ZERO(&fdset);
+  FD_SET(fd, &fdset);
+  int r;
+  connect(fd, (struct sockaddr *)addr, sizeof(struct sockaddr_in));
+  free(addr);
+  if (errno == EINPROGRESS) {
+    printf("selecting\n");
+    if ((r=select(fd + 1, NULL, &fdset, NULL, &tv)) == 1) {
+      printf("selecting ret 1\n");
+      socklen_t len = sizeof(r);
+      if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &r, &len)) {
+        perror("setsockopt");
+        return 1;
+      }
+      if (r) {
+        errno = r;
+        perror("connect/getsockopt");
+        return 1;
+      }
+      // connected
+    } else if (r < 0) {
+      perror("select");
+      return 1;
+    } else {
+      errno = ETIMEDOUT;
+      fprintf(stderr, "timeout connecting to \"%s\" port %d\n", host, port);
+      return 1;
+    }
+  } else {
     perror("connect");
     return 1;
   }
-  free(addr);
-  int optval = 1;
-  if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof(optval))) {
+  r = 1;
+  if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &r, sizeof(r))) {
     perror("setsockopt");
   }
   con->mpdfd = fd;
