@@ -3,6 +3,9 @@
 #include <poll.h>
 #include <stdio.h>
 #include "mongoose.h"
+#if SERVESTATIC
+#include "embeddedfile.h"
+#endif
 #ifdef AVAHI
 #include <avahi-client/client.h>
 #include <avahi-client/lookup.h>
@@ -18,7 +21,7 @@
 
 static char *bindaddr = "0.0.0.0";
 static int port = 8000;
-static char *rootdir = ".";
+static char *rootdir = NULL;
 
 struct myhost {
   char name[100];
@@ -258,8 +261,33 @@ static void fn(struct mg_connection *mgcon, int ev, void *ev_data, void *fn_data
       // Upgrade to websocket. From now on, a connection is a full-duplex
       // Websocket connection, which will receive MG_EV_WS_MSG events.
       mg_ws_upgrade(mgcon, hm, NULL);
+#ifdef EMBEDDEDFILE
+    } else if (!rootdir) {
+      const struct embeddedfile *f;
+      if (mg_http_match_uri(hm, "/")) {
+        f = find_embedded_file("/index.html");
+      } else {
+        char *t = malloc(hm->uri.len + 1);
+        memcpy(t, hm->uri.ptr, hm->uri.len);
+        t[hm->uri.len] = 0;
+        f = find_embedded_file(t);
+      }
+      mgcon->is_resp = 1;
+      if (f) {
+        mg_printf(mgcon, "HTTP/1.0 200 OK\r\n");
+        mg_printf(mgcon, "Content-Type: %s\r\n", f->mimetype);
+        mg_printf(mgcon, "Content-Length: %d\r\n\r\n", f->size);
+        mg_send(mgcon, f->data, f->size);
+      } else {
+        mg_printf(mgcon, "HTTP/1.0 404 Not Found\r\n");
+        mg_printf(mgcon, "Content-Type: text/html\r\n");
+        mg_printf(mgcon, "Content-Length: 9\r\n\r\n");
+        mg_printf(mgcon, "Not Found");
+      }
+      mgcon->is_resp = 0;
+#endif
     } else {
-      // Serve static files
+      // Serve static files from filesystem
       struct mg_http_serve_opts opts = {.root_dir = rootdir};
       mg_http_serve_dir(mgcon, ev_data, &opts);
     }
@@ -422,7 +450,12 @@ int main(int argc, char **argv) {
        printf("       --mpd-name <string>          friendly-name of the MPD server. Must be specified before mpd-host (default: \"MDP\")\n");
        printf("       --port <port>                port to bind the webserver to (default: 8000)\n");
        printf("       --bind <localaddress>        local address to bind the webserver to (default: 0.0.0.0)\n");
-       printf("       --root <directory>           directory to serve static HTTP files from (default: .)\n");
+       printf("       --root <directory>           directory to serve static HTTP files from (default:");
+#ifdef EMBEDDEDFILE
+       printf(" internal filesystem)\n");
+#else 
+       printf(" .)\n");
+#endif
 #ifdef AVAHI
        printf("       --no-zeroconf                don't use Zeroconf to find hosts\n");
 #endif
@@ -437,6 +470,11 @@ int main(int argc, char **argv) {
        exit(1);
     }
   }
+#ifndef EMBEDDEDFILE
+  if (!rootdir) {
+    rootdir = strdup(".");
+  }
+#endif
   char *ws_listen;
   asprintf(&ws_listen, "ws://%s:%d", bindaddr, port);
   struct mg_mgr mgr;
