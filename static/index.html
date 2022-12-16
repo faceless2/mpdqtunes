@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <meta charset="utf-8">
+  <title>MPD</title>
+
+  <script src="js/Context.js"></script>
+  <script src="js/Server.js"></script>
+  <script src="js/TrackList.js"></script>
+  <script src="js/Partition.js"></script>
+  <script src="js/Playlist.js"></script>
+  <script src="js/Library.js"></script>
+  <script src="js/script.js"></script>
+  <link rel="stylesheet" href="style.css">
+
+  <!-- This object is cloned for each new partition -->
+  <section id="partition-template" class="partition">
+   <div class="action">
+    <a class="icon trackstart small"></a>
+    <input type="range" data-action="position" data-field="position" min="0" max="100"/>
+    <a class="icon trackend small"></a>
+    <output data-field="position">-:-- / -:--</output>
+
+    <div style="flex-grow: 1"></div>
+
+    <a class="icon" data-action="previous"></a>
+    <a class="icon" data-action="play" data-field="playstate"></a>
+    <a class="icon" data-action="next"></a>
+    <div style="width: 20px"></div>
+    <a class="icon small" data-action="volumedown"></a>
+    <input type="range" data-action="volume" data-field="volume" min="0" max="100"/>
+    <a class="icon small" data-action="volumeup"></a>
+    <output data-field="volume">50%</output>
+
+    <div style="flex-grow: 1"></div>
+
+    <a class="icon" data-action="mode" data-field="mode"></a>
+    <a class="icon" data-action="random" data-field="random"></a>
+    <a class="icon" data-action="replaygain" data-field="replaygain"></a>
+
+    <div style="flex-grow: 1"></div>
+
+    <a class="icon menu" data-action="speaker">
+     <div class="popup hidden" data-action="outputselect"></div>
+    </a>
+    </div>
+   </div>
+   <div class="table"></div>
+   <img class="coverart" data-field="cover-nowplaying"/>
+  </section>
+
+  <!-- This object is cloned for each new playlist -->
+  <section id="playlist-template" class="playlist">
+   <div class="action">
+    <label>Name: <input class="playlist-name" data-field="name" data-action="name"></label>
+    <a class="icon" data-action="destroy"></a>
+   </div>
+   <div class="table"></div>
+  </section>
+
+  <!-- This object is cloned for each new Library -->
+  <section id="library-template" class="library">
+   <div class="action">
+    <label>Filter: <input data-action="filter" /></label>
+   </div>
+   <div class="table"></div>
+  </section>
+
+  <!-- This object is cloned for each new Server, and placed in the navigation object -->
+  <section id="server-navigation-template" class="server">
+   <a class="servername" data-action="selectserver" data-field="name"></a>
+   <div data-field="library"></div>
+   <div data-field="partitions"></div>
+   <div data-field="playlists"></div>
+  </section>
+  </div>
+
+</head>
+
+<body>
+ <nav id="nav"></nav>
+ <div class="column-resize"></div>
+ <main id="main"></main>
+ <div id="bin" class="hidden" data-action="delete"></div>
+ <div id="drag" class="hidden"></div>
+</body>
+</html>

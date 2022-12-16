@@ -1,0 +1,313 @@
+body {
+    font-family: sans-serif;
+    display: flex;
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+    --selected: #08A4;
+    --now-playing: #F804;
+    --drop-target-color: red;
+    --margin: 8px;
+    --row-height: 1.8em;
+    --action-height: 40px;
+    user-select: none;
+}
+input {
+    user-select: initial;
+}
+input[type=range], label {
+    flex-grow: 1;
+}
+label {
+    display: flex;
+}
+label input {
+    flex: 1;
+    margin-left: 2em;
+    margin-right: 4em;
+}
+.hidden {
+    display: none !important;
+}
+a {
+    color: inherit;
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+    display: block;
+}
+nav {
+    width: 15%;
+    padding: var(--margin);
+    overflow-y: auto;
+}
+main {
+    flex: 1;
+    position: relative;
+    display: flex;
+}
+main > * {
+    flex: 1;
+    display: none;
+}
+main > *:target {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - var(--margin) * 2);
+}
+
+/**
+ * Main table styling
+ */
+.table {
+    flex: 1;
+    margin: var(--margin);
+    position: relative;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    padding-bottom: 10px;
+}
+.tr {
+    height: var(--row-height);
+    line-height: var(--row-height);
+    position: relative;
+}
+.tr:where(:nth-child(2n+3)) {
+    background: #00000008;
+}
+.thead {
+    top: 0;
+    position: sticky;
+    border-bottom: 2px solid #aaa;
+    z-index: 5;
+    background: white;
+    margin-bottom: 2px;
+}
+.td, .th {
+    position: relative;
+    box-sizing: border-box;
+    white-space: pre;
+    overflow: hidden;
+    padding: 0 4px;
+    text-shadow: 0 0 2px white; /* because of coverart */
+}
+.th {
+    font-weight: bold;
+}
+.th.sort::after {
+    position: absolute;
+    right: 0;
+    content: "↓";
+}
+.th.sort.reverse::after {
+    content: "↑";
+}
+.column-resize {
+    position: absolute;
+    width: 2px;
+    padding: 0 2px;
+    height: 100%;
+    background: #aaa;
+    background-clip: content-box;
+    cursor: col-resize;
+}
+body > .column-resize {
+    position: relative;
+}
+.table .table-menu {
+    position: absolute;
+    right: 0;
+    z-index: 8;
+    padding: 2px 2px 2px 4px;
+    width: 20px;
+    height: var(--row-height);
+    box-sizing: border-box;
+    background: no-repeat center/contain content-box url("resources/menu.svg"), white;
+}
+.table .table-menu .popup {
+    top: calc(var(--row-height) + 4px);
+}
+/* Next two needed to give a drop-target at the end of the table */
+.table::after {
+    display: block;
+    height: var(--row-height);
+    content: "";
+}
+.table.drop-target::after {
+    border-top: 2px solid var(--drop-target-color); /* drop at end of table */
+}
+.tr:not(.thead).drop-target {
+    border-top: 2px solid var(--drop-target-color); /* drop onto existing row */
+    margin-top: -2px;
+}
+.tr.thead .th.drop-target {
+    outline: 2px solid var(--drop-target-color);    /* when resizing columns */
+}
+
+
+/**
+ * Highlighting things
+ */
+.tr.selected {
+    z-index: 2;
+}
+.disabled {
+    color: #aaa;
+}
+.selected {
+    background: var(--selected);
+}
+.nowplaying {
+    background: var(--now-playing);
+}
+.tr.selected.nowplaying {
+    background-image: linear-gradient(45deg, var(--now-playing) 25%, var(--selected) 25%, var(--selected) 50%, var(--now-playing) 50%, var(--now-playing) 75%, var(--selected) 75%, var(--selected) 100%);
+    background-size: 5.66px 5.66px;
+    background-color: initial;
+}
+
+/**
+ * Navigation pane items
+ */
+.server:not(.active) div {
+    display: none;
+}
+.servername {
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+.server {
+    margin-bottom: 1em;
+}
+[data-field="partitions"] {
+    margin: 4px 0;
+    padding: 4px 0;
+    border-top: 1px solid #aaa;
+    border-bottom: 1px solid #aaa;
+}
+
+.partition.active::after {
+    float: right;
+    content: "☆";
+    position: relative;
+    top: -3px;
+}
+/*:is([data-field="playlists"], [data-field="partitions"]) .drop-target */
+:is(.partition, .playlist, [data-action="newplaylist"]).drop-target {
+    outline: 2px solid var(--drop-target-color);
+}
+/* We want to see the "newplaylist" option when root has "track-dragging" set */
+[data-action="newplaylist"] {
+    display: none;
+    font-style: italic;
+}
+.track-dragging [data-action="newplaylist"] {
+    display: block;
+}
+
+/**
+ * The "action" pane above the table, and popups (also used in table)
+ */
+.action {
+    flex: 0 0 var(--action-height);
+    background: #ddd;
+    display: flex;
+    justify-content: space-between;
+    padding: var(--margin) var(--margin) 4px var(--margin);
+    height: var(--action-height);
+    white-space: nowrap;
+    align-items: center;
+}
+.icon.small {
+    height: 50%;
+    margin: 0 0.5em;
+}
+.icon {
+    height: 90%;
+    aspect-ratio: 1;
+    margin: 0 1em;
+    background: no-repeat center/contain content-box url("resources/bin.svg");
+}
+.icon.trackstart                                        { background-image: url("resources/trackstart.svg"); }
+.icon.trackend                                          { background-image: url("resources/trackend.svg"); }
+.icon.speaker                                           { background-image: url("resources/speaker.svg"); }
+.icon.menu                                              { background-image: url("resources/menu.svg"); aspect-ratio: 200/520 }
+.icon[data-action="destroy"]                            { background-image: url("resources/bin.svg"); }
+.icon[data-action="play"]                               { background-image: url("resources/play.svg"); }
+.icon[data-action="play"][data-value="play"]            { background-image: url("resources/pause.svg"); }
+.icon[data-action="previous"]                           { background-image: url("resources/fr.svg"); }
+.icon[data-action="next"]                               { background-image: url("resources/ff.svg"); }
+.icon[data-action="volumedown"]                         { background-image: url("resources/voldown.svg"); }
+.icon[data-action="volumeup"]                           { background-image: url("resources/volup.svg"); }
+.icon[data-action="replaygain"]                         { background-image: url("resources/compress-none.svg"); }
+.icon[data-action="replaygain"]:is([data-value="auto"],[data-value="album"],[data-value="track"]) { background-image: url("resources/compress.svg"); }
+.icon[data-action="mode"]                                { background-image: url("resources/repeat-none.svg"); }
+.icon[data-action="mode"][data-value="repeat-one"]      { background-image: url("resources/repeat-one.svg"); }
+.icon[data-action="mode"][data-value="repeat-all"]      { background-image: url("resources/repeat-all.svg"); }
+.icon[data-action="random"]                             { background-image: url("resources/shuffle-none.svg"); }
+.icon[data-action="random"][data-value="true"]          { background-image: url("resources/shuffle.svg"); }
+/* popups - also used in table */
+.icon.menu .popup {
+    right: 30px;
+    top: 50px;
+}
+.popup {
+    position: absolute;
+    z-index: 20;
+    right: 4px;
+    border: 1px solid black;
+    background: white;
+    padding: 8px;
+    top: 20px;
+}
+.popup a {
+    display: block;
+    white-space: nowrap;
+}
+
+/**
+ * Special things
+ */
+#bin {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    width: 120px;
+    aspect-ratio: 0.75;
+    padding: 10px;
+    border: 2px solid black;
+    --bg: white;
+    background: no-repeat center/cover content-box url("resources/bin.svg"), var(--bg);
+    z-index: 5;
+    display: block;
+}
+
+#bin.drop-target {
+    --bg: var(--selected);
+}
+
+#drag { /* this is the thing we see when we drag */
+    position: absolute;
+    background: no-repeat center/cover content-box url("resources/music.svg");
+    padding: 20px;
+    width: 80px;
+    aspect-ratio: 1;
+    z-index: 8;
+}
+
+/**
+ * These are things we clone, but the originals are never displayed
+ */
+#partition-template, #playlist-template, #library-template, #server-navigation-template {
+    display: none !important;
+}
+
+img.coverart {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    aspect-ratio: 1;
+    height: calc(100% - 90px);
+    z-index: -1;
+    opacity: 0.2;
+}
