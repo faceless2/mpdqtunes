@@ -1,7 +1,18 @@
-# mpdwsproxy
+# mpdqtunes
 
-An ultra-simple web-server which acts as a proxy between one or more [MPD](https://musicpd.org) server and one or more web-clients.
-Intended to serve as a basic starting point for any MPD web-client.
+A clean web-interface onto one or more [MPD](https://musicpd.org) servers.
+
+* Supports multiple MPD servers, multiple partitions (players) and multiple outputs within a single user-interface.
+* Autodiscovery via ZeroConf
+* Simple design - no frameworks!
+
+The project is in two parts
+
+## Proxy server
+
+An ultra-simple web-server which acts as a proxy between one or more [MPD](https://musicpd.org) server and one or more web-clients. MPD servers are discovered automaticallty by Zeroconf (although this is optional).
+
+Intended to serve as a basic starting point for any MPD web-client, by default it embeds the web-interface parts of this project but can also server files from the filesystem.
 
 The web-client connects to a websocket on the `/ws` path and sends a text message with `proxy-listservers`. The reply lists all the known servers
 (either specified manually or found by zeroconf). The `proxy-connect` command will connect to the named server, and from there all communication
@@ -15,13 +26,23 @@ Any HTTP requests for paths other than `/ws` are served from the filesystem.
 
 Thanks to the [Moongoose](https://mongoose.ws) project for all the web-server bits.
 
-## Building
+### Building
 Type `make`. To build with Zeroconf support, install `libavahi-client-dev` before you type `make`
 
+## Web Client
 
-## Example
+I couldn't find a client that could handle multiple partitions from a single interface, or that didn't depend on a dozen different frameworks, so this was the result. It's inspired by the iTunes interface before iTunes went bad.
 
-Run `make`, Put this file in the current directory as `index.html`, run `mpd`, run `mpdwsproxy` then connect to `http://localhost:8000`.
+* Tested with 50,000+ tracks, the main Library is presented as a single table, but scrolling loads more data
+* Tables can be sorted, filtered, columns resized, reordered or hidden.
+* Tracks are dragged onto players or playlists, or double-click to play immediately.
+* JS and stylesheets are commented and as clean as I can get them.
+
+![image](https://user-images.githubusercontent.com/989243/208001408-0bc9dd9d-69d8-4eda-9f96-ffcc40b62b31.png)
+
+## Standalone Example
+
+If you want to try the server side without the embedded client, run `make`, Put this file in the current directory as `index.html`, run `mpd`, run `mpqqtunes --root .` then connect to `http://localhost:8000`.
 
 ```html
 <!DOCTYPE html>
