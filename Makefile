@@ -1,4 +1,4 @@
-PROG = mpdwsproxy
+PROG = mpdqtunes
 #CFLAGS = -g
 LIBS =
 
