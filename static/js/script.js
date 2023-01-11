@@ -1,10 +1,22 @@
 "use strict";
 
 let ctx;
-let mouseData;
+let mouseData = {};
 
 function mouseHandler(e) {
-    if (e.type == "dblclick") {
+    let type = e.type;
+    if (e.target && (e.target.tagName == "SELECT" || e.target.tagName == "INPUT")) {
+        return;
+    }
+    if (type == "touchstart" || type == "touchend") {
+        // This will prevent dblclick-to-zoom on iOS but will also destroy
+        // any click/dblclick events. So we have to recreate those manually
+        // below from the touch events. Done at end of this method.
+        e.preventDefault();
+        return;
+    }
+
+    if (type == "dblclick") {
         for (let elt of document.elementsFromPoint(e.clientX, e.clientY)) {
             if (elt.classList.contains("tr")) {
                 let trackList = elt.parentNode.trackList;
@@ -14,27 +26,28 @@ function mouseHandler(e) {
                 break;
             }
         }
+        e.preventDefault();
         
-    } else if (e.type == "mousedown") {
+    } else if (type == "pointerdown") {
+        let alt = e.shiftKey || (e.pointerType == "touch" && !e.isPrimary);
         for (let elt of document.elementsFromPoint(e.clientX, e.clientY)) {
-            if (elt.classList.contains("column-resize") && !mouseData) {
+            if (elt.classList.contains("column-resize")) {
                 // Begin a column-resize action in a table
-                mouseData = {};
                 mouseData.action = "column-resize";
                 mouseData.dragElement = elt;
                 mouseData.dragElement.classList.add("selected");
                 mouseData.dragPosition = { x: e.pageX, y: e.pageY };
                 mouseData.column = elt.getAttribute("data-column");
                 mouseData.trackList = elt.parentNode.parentNode.trackList;
-            } else if (elt.classList.contains("tr") && !elt.classList.contains("thead") && !mouseData) {
+                break;
+            } else if (elt.classList.contains("tr") && !elt.classList.contains("thead")) {
                 // Begin a track-drag action in a table
-                mouseData = {};
                 mouseData.action = "track-drag";
                 mouseData.dragElement = elt;
                 mouseData.dragPosition = { x: e.pageX, y: e.pageY };
                 mouseData.trackList = elt.parentNode.trackList;
                 let newSelectEnd;
-                if (e.shiftKey && mouseData.trackList.getSelection()) {
+                if (alt && mouseData.trackList.getSelection()) {
                     mouseData.trackList.select(mouseData.trackList.getSelection().start, elt);
                 } else {
                     mouseData.trackList.select(elt, elt);
@@ -45,20 +58,20 @@ function mouseHandler(e) {
                 }
                 drag.append(document.createTextNode(Math.abs(mouseData.trackList.getSelection().start.row - mouseData.trackList.getSelection().end.row) + 1));
                 break;
-            } else if (elt.classList.contains("th") && elt.parentNode.classList.contains("thead") && !mouseData) {
+            } else if (elt.classList.contains("th") && elt.parentNode.classList.contains("thead")) {
                 // Begin a drag to reorder columns
-                mouseData = {}
                 mouseData.action = "column-order";
                 mouseData.dragElement = elt;
                 mouseData.dragPosition = { x: e.pageX, y: e.pageY };
                 mouseData.trackList = elt.parentNode.parentNode.trackList;
                 mouseData.originalLeft = window.getComputedStyle(elt, null).left;
                 mouseData.dragElement.classList.add("selected");
-            } else if (elt.classList.contains("popup")) {
+                break;
+            } else if (elt.classList.contains("popup") || elt.classList.contains("table-menu")) {
                 break;
             }
         }
-        if (mouseData) {
+        if (mouseData.action) {
             let stylesheet = document.querySelector("style[data-for=\"mouse\"]");
             if (!stylesheet) {
                 stylesheet = document.createElement("style");
@@ -70,10 +83,7 @@ function mouseHandler(e) {
             mouseData.server = mouseData.trackList ? mouseData.trackList.server : null;
         }
 
-    } else if (!mouseData) {
-        return;
-
-    } else if (e.type == "mousemove" && mouseData.action == "column-resize") {
+    } else if (type == "pointermove" && mouseData.action == "column-resize") {
         // in-progress column resize
         let diff = e.pageX - mouseData.dragPosition.x;
         if (mouseData.trackList) {
@@ -86,7 +96,7 @@ function mouseHandler(e) {
             prev.style.width = "calc(" + style.width + " + " + diff + "px)";
         }
 
-    } else if (e.type == "mousemove" && mouseData.action == "column-order") {
+    } else if (type == "pointermove" && mouseData.action == "column-order") {
         // in-progress column reorder
         let diff = e.pageX - mouseData.dragPosition.x;
         mouseData.dragElement.style.left = "calc(" + mouseData.originalLeft + " + " + diff + "px)";
@@ -100,7 +110,7 @@ function mouseHandler(e) {
             }
         }
 
-    } else if (e.type == "mousemove" && mouseData.action == "track-drag") {
+    } else if (type == "pointermove" && mouseData.action == "track-drag") {
         // in-progress trag dragging
         let drag = document.getElementById("drag");
         document.documentElement.classList.add("track-dragging");
@@ -143,7 +153,7 @@ function mouseHandler(e) {
             mouseData.dropTarget = dropTarget;
         }
 
-    } else if (e.type == "mouseup" && mouseData.action == "column-resize") {
+    } else if (type == "pointerup" && mouseData.action == "column-resize") {
         // column-resize finished
         mouseData.dragElement.classList.remove("selected");
         if (!mouseData.trackList && mouseData.dragElement.previousElementSibling) {
@@ -156,9 +166,16 @@ function mouseHandler(e) {
                 ctx.preferences.columnResize[prev.id] = style.width.toString();
                 ctx.savePreferences();
             }
+            for (let tracklist of ctx.getAllTrackLists()) {
+                if (tracklist.active) {
+                    tracklist.resize();
+                } else if (tracklist.tracks) {
+                    tracklist.pendingResize = true;
+                }
+            }
         }
 
-    } else if (e.type == "mouseup" && mouseData.action == "column-order") {
+    } else if (type == "pointerup" && mouseData.action == "column-order") {
         // column-order finished
         mouseData.dragElement.classList.remove("selected");
         mouseData.dragElement.style.left = null;
@@ -179,7 +196,7 @@ function mouseHandler(e) {
             mouseData.trackList.resize();
         }
 
-    } else if (e.type == "mouseup" && mouseData.action == "track-drag" && mouseData.dropTarget && (mouseData.dropTarget.id == "bin" || mouseData.dropTarget.classList.contains("tr") || mouseData.dropTarget.classList.contains("table"))) {
+    } else if (type == "pointerup" && mouseData.action == "track-drag" && mouseData.dropTarget && (mouseData.dropTarget.id == "bin" || mouseData.dropTarget.classList.contains("tr") || mouseData.dropTarget.classList.contains("table"))) {
         // Drop to reorder or delete
         let selection = mouseData.trackList.getSelection();
         let start = Math.min(selection.start.row, selection.end.row);
@@ -195,7 +212,7 @@ function mouseHandler(e) {
         }
         mouseData.trackList.select(null, null);
 
-    } else if (e.type == "mouseup" && mouseData.action == "track-drag" && mouseData.dropTarget && (mouseData.dropTarget.getAttribute("data-action") == "newplaylist" || (mouseData.dropTarget.trackList && mouseData.dropTarget.trackList.append))) {
+    } else if (type == "pointerup" && mouseData.action == "track-drag" && mouseData.dropTarget && (mouseData.dropTarget.getAttribute("data-action") == "newplaylist" || (mouseData.dropTarget.trackList && mouseData.dropTarget.trackList.append))) {
         // Drop onto playlist
         let selection = mouseData.trackList.getSelection();
         let start = Math.min(selection.start.row, selection.end.row);
@@ -225,22 +242,83 @@ function mouseHandler(e) {
             mouseData.server.createPlaylist(name, files);
         } else {
             // Drop onto existing playlist
-            mouseData.dropTarget.trackList.append(files, e.shiftKey ? 0 : null);
+            let alt = e.shiftKey;
+            mouseData.dropTarget.trackList.append(files, alt ? 0 : null);
             mouseData.trackList.select(null, null);
         }
     }
 
-    if (e.type == "mouseup") {
+    if (mouseData.action && (type == "pointerup" || type == "pointercancel")) {
         // Cleanup after mouse released
-        mouseData.stylesheet.innerHTML = "";
-        if (mouseData.dropTarget) {
-            mouseData.dropTarget.classList.remove("drop-target");
+        if (mouseData.timerFunction) {
+            clearTimeout(mouseData.timerFunction);
+        }
+        if (mouseData.action) {
+            mouseData.stylesheet.innerHTML = "";
+            if (mouseData.dropTarget) {
+                mouseData.dropTarget.classList.remove("drop-target");
+            }
+        }
+        if (type == "pointercancel") {
+            if (mouseData.trackList) {
+                mouseData.trackList.select(null, null);
+            }
+            if (mouseData.dragElement) {
+                mouseData.dragElement.classList.remove("selected");
+                mouseData.dragElement.style.left = null;
+            }
         }
         document.documentElement.classList.remove("track-dragging");
+        document.documentElement.classList.remove("nonscrolling");
         document.getElementById("bin").classList.add("hidden");
         document.getElementById("drag").classList.add("hidden");
-        mouseData = null;
+        for (let key in mouseData) {
+            if (key != "click") {
+                delete mouseData[key];
+            }
+        }
     }
+
+    if (e.pointerType == "touch") {
+        // Have to recreate click/dblclick events
+        // Must be done after the others
+        let cancel = false;
+        if (type == "pointercancel" || type == "pointermove") {
+            cancel = true;
+        } else if (type == "pointerdown" || type == "pointerup") {
+            if (type == "pointerdown") {
+                if (!mouseData.click) {
+                    mouseData.click = {target: e.target, count: 0};
+                }
+                if (e.target == mouseData.click.target) {
+                    mouseData.click.down = Date.now();
+                } else {
+                    cancel = true;
+                }
+            } else if (mouseData.click) {
+                e.target.dispatchEvent(new MouseEvent("click", e));
+                if (++mouseData.click.count == 2) {
+                    e.target.dispatchEvent(new MouseEvent("dblclick", e));
+                }
+            }
+            if (mouseData.click) {
+                if (mouseData.click.timer) {
+                    clearTimeout(mouseData.click.timer);
+                }
+                mouseData.click.timer = setTimeout(()=> {
+                    delete mouseData.click;
+                }, 500);
+            }
+        }
+        if (cancel && mouseData.click) {
+            if (mouseData.click.timer) {
+                clearTimeout(mouseData.click.timer);
+            }
+            delete mouseData.click;
+        }
+    }
+
+
 }
 
 function init() {
@@ -261,10 +339,12 @@ function init() {
             ctx.activate(location.hash);
         }
     });
-    document.documentElement.addEventListener("mousedown", mouseHandler);
-    document.documentElement.addEventListener("mouseup", mouseHandler);
-    document.documentElement.addEventListener("mousemove", mouseHandler);
-    document.documentElement.addEventListener("mouseclick", mouseHandler);
+    document.documentElement.addEventListener("touchstart", mouseHandler);
+    document.documentElement.addEventListener("touchend", mouseHandler);
+    document.documentElement.addEventListener("pointerdown", mouseHandler);
+    document.documentElement.addEventListener("pointerup", mouseHandler);
+    document.documentElement.addEventListener("pointermove", mouseHandler);
+    document.documentElement.addEventListener("pointercancel", mouseHandler);   // Called when pointer moves to scrolling
     document.documentElement.addEventListener("dblclick", mouseHandler);
     window.addEventListener("hashchange", (e) => {
         ctx.activate(location.hash);

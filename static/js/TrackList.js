@@ -17,7 +17,7 @@ class TrackList extends EventTarget {
     #selectStart;
     #selectEnd;
     #columnResizeWidth;
-    rows;
+    #rowHeight;
     preferences;
 
     constructor(opts) {
@@ -87,27 +87,95 @@ class TrackList extends EventTarget {
     #update() {
         let style = window.getComputedStyle(this.elt_table, null);
         let padding = (style.paddingTop.replace(/px/, "")*1) + (style.paddingBottom.replace(/px/, "")*1);
-        let unitHeight = (this.elt_table.scrollHeight - padding) / this.tracks.length;
-        this.#offset = Math.floor(this.elt_table.scrollTop / unitHeight);
-        this.visible = Math.ceil(this.elt_table.clientHeight / unitHeight);
+        this.#offset = Math.floor(this.elt_table.scrollTop / this.#rowHeight);
         let start = this.#offset;
-        let len = this.visible;
+        let end = Math.min(this.tracks.length - 1, start + Math.ceil(this.elt_table.clientHeight / this.#rowHeight) - 1);;
+//        console.log("update: start="+start+" end="+end+" tracks="+this.tracks.length+" rowh="+this.#rowHeight);
 
-        while (len && this.tracks[start]) {
-            if (!this.rows[start].firstChild) {
+        // Traverse children, replacing spacers with rows whre required.
+        // Start from the beginning unless "start" is already a row; then we can shortcut
+        let y = 0;
+        let e = this.elt_table.firstElementChild;;
+        if (this.tracks[start] && this.tracks[start].row) {
+            y = start;
+            e = this.tracks[start].row;
+        }
+        for (;y <= end;e=e.nextElementSibling) {
+            if (e.classList.contains("spacer")) {
+                // it's a spacer;
+                if (e.row != y) {
+                    console.log(e);
+                    throw new Error("expected " + y + " got " + e.row);
+                } else if (y + e.length <= start) {
+                    // spacer end is before start; no action
+                    //console.log("y="+y+" spacer: "+e.row+".."+(e.row+e.length-1)+" skip");
+                    y += e.length;
+                } else if (y < start) {
+                    // spacer start is before start; split spacer so new one starts at start
+                    //console.log("y="+y+" spacer: "+e.row+".."+(e.row+e.length-1)+" split off first");
+                    let spacer = document.createElement("div");
+                    spacer.classList.add("spacer");
+                    spacer.row = start;
+                    spacer.length = e.row + e.length - start;
+                    e.length = start - e.row;
+                    e.style.height = BigInt(e.length * this.#rowHeight) + "px";
+                    spacer.setAttribute("data-row", spacer.row);
+                    spacer.setAttribute("data-length", spacer.length);
+                    e.setAttribute("data-row", e.row);
+                    e.setAttribute("data-length", e.length);
+                    spacer.style.height = BigInt(spacer.length * this.#rowHeight) + "px";
+                    this.elt_table.insertBefore(spacer, e.nextSibling);
+                    y += e.length;
+                } else if (y == e.row) {
+                    // spacer starts at y and y is in range: trim by one row at top
+                    //console.log("y="+y+" spacer: "+e.row+".."+(e.row+e.length-1)+" trim first");
+                    let row = document.createElement("div");
+                    row.classList.add("tr");
+                    row.row = y;
+                    row.setAttribute("data-row", row.row);
+                    this.elt_table.insertBefore(row, e);
+                    e.row++;
+                    e.length--;
+                    e.setAttribute("data-row", e.row);
+                    e.setAttribute("data-length", e.length);
+                    if (e.length === 0) {
+                        e.remove();
+                    } else {
+                        e.style.height = BigInt(e.length * this.#rowHeight) + "px";
+                    }
+                    e = row;
+                    if (this.tracks[y]) {
+                        this.tracks[y].row = row;
+                    }
+                    y++;
+                } else {
+                    //console.log("y="+y+" spacer: "+e.row+".."+(e.row+e.length-1)+" other?");
+                }
+            } else if (typeof(e.row) == "number") {
+                //console.log("y="+y+" row");
+                if (this.tracks[y]) {
+                    this.tracks[y].row = e;
+                }
+                y++;
+            } else {
+                //console.log("other");
+            }
+        }
+
+        while (start <= end && this.tracks[start]) {
+            if (this.tracks[start].row && !this.tracks[start].row.firstChild) {
                 this.#redraw(start);
             }
             start++;
-            len--;
         }
-        while (len && this.tracks[start + len - 1]) {
-            if (!this.rows[start + len - 1].firstChild) {
-                this.#redraw(start + len);
+        while (start <= end && this.tracks[end]) {
+            if (this.tracks[end].row && !this.tracks[end].row.firstChild) {
+                this.#redraw(end);
             }
-            len--;
+            end--;
         }
-        if (len > 0 && this.loader) {
-            this.loader(start, len);
+        if (end >= start && this.loader) {
+            this.loader(start, end - start + 1);
         }
     }
 
@@ -117,8 +185,11 @@ class TrackList extends EventTarget {
 
     select(start, end) {
         let inrange = false;
-        for (let e of this.rows) {
-            if (!start) {
+        for (let t of this.tracks) {
+            let e = t ? t.row : null;
+            if (!e) {
+                // shouldn't happen
+            } else if (!start) {
                 e.classList.remove("selected");
             } else if (e == start) {
                 if (e != end) {
@@ -180,6 +251,7 @@ class TrackList extends EventTarget {
                     a.appendChild(document.createTextNode(ctx.availableColumns[col]));
                     a.classList.toggle("disabled", typeof(this.columns[col]) == "undefined");
                     a.addEventListener("click", (e) => {
+                        e.preventDefault();
                         if (typeof(this.columns[col]) == "undefined") {
                             this.columns[col] = 0;
                             e.target.classList.remove("disabled");
@@ -193,15 +265,14 @@ class TrackList extends EventTarget {
                     popup.appendChild(a);
                 }
 
-                this.elt_table.appendChild(menu);
+                headerRow.appendChild(menu);
                 this.elt_table.appendChild(headerRow);
-                this.rows = [];
             } else {
                 headerRow = this.elt_table.querySelector(".tr.thead");
             }
 
             // Add headers
-            while (headerRow.lastChild) {
+            while (headerRow.firstChild != headerRow.lastChild) {
                 headerRow.removeChild(headerRow.lastChild);
             }
             let colArray = Object.keys(this.columns);
@@ -235,27 +306,31 @@ class TrackList extends EventTarget {
                 }
             }
 
-            // Add correct number of rows
-            while (this.rows.length > this.tracks.length) {
-                this.rows[this.rows.length - 1].remove();
-                this.rows.pop();
-            }
-            for (let i=0;i<this.rows.length;i++) {
-                let row = this.rows[i];
-                while (row.lastChild) {
-                    row.removeChild(row.lastChild);
+            // Remove all rows
+            let e2;
+            for (let e=this.elt_table.lastChild;e;e=e2) {
+                e2 = e.previousSibling;
+                if (e.nodeType != Node.ELEMENT_NODE || typeof(e.row) == "number") {
+                   e.remove();
                 }
             }
-            while (this.rows.length < this.tracks.length) {
-                let row = document.createElement("div");
-                row.classList.add("tr");
-                row.row = this.rows.length;
-                this.elt_table.appendChild(row);
-                this.rows.push(row);
-            }
-            if (typeof(this.track) == "number" && this.track >= 0 && this.track < this.rows.length) {
-                this.rows[this.track].classList.add("nowplaying");
-            }
+
+            // Find height of row by adding temp, then removing it.
+            let row = document.createElement("div");
+            row.classList.add("tr");
+            this.elt_table.appendChild(row);
+            this.#rowHeight = row.offsetHeight;
+            row.remove();
+
+            // Add spacer
+            let spacer = document.createElement("div");
+            spacer.classList.add("spacer");
+            spacer.row = 0;
+            spacer.length = this.tracks.length;
+            spacer.setAttribute("data-row", spacer.row);
+            spacer.setAttribute("data-length", spacer.length);
+            spacer.style.height = BigInt(spacer.length * this.#rowHeight) + "px";
+            this.elt_table.appendChild(spacer);
 
             this.#update();
             if (initialize) {
@@ -276,24 +351,38 @@ class TrackList extends EventTarget {
         if (!track) {
             throw new Error("bad track");
         }
+        if (i > 0 && this.tracks[i - 1] && this.tracks[i - 1].row) {
+            track.row = this.tracks[i - 1].row.nextElementSibling;
+        } else {
+            for (let e=this.elt_table.firstElementChild;e;e=e.nextElementSibling) {
+                if (e.row === i) {
+                    track.row = e;
+                    break;
+                }
+            }
+        }
         this.tracks[i] = track;
         this.#redraw(i);
+        if (i === this.track) {
+            track.row.classList.add("nowplaying");
+        }
     }
 
     #redraw(i) {
         let track = this.tracks[i];
-        let row = this.rows[i];
-        while (row.lastChild) {
-            row.lastChild.remove();
-        }
-        for (let col in this.columns) {
-            let cell = document.createElement("div");
-            cell.classList.add("td");
-            cell.classList.add(col.toLowerCase());
-            if (track[col]) {
-                cell.appendChild(document.createTextNode(track[col]));
+        if (track.row) {
+            while (track.row.lastChild) {
+                track.row.lastChild.remove();
             }
-            row.appendChild(cell);
+            for (let col in this.columns) {
+                let cell = document.createElement("div");
+                cell.classList.add("td");
+                cell.classList.add(col.toLowerCase());
+                if (track[col]) {
+                    cell.appendChild(document.createTextNode(track[col]));
+                }
+                track.row.appendChild(cell);
+            }
         }
     }
 

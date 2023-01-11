@@ -36,6 +36,9 @@ class Library extends TrackList {
     }
 
     sort(column, reverse) {
+        if (column == "file") {
+            return;     // Can't sort on file
+        }
         this.sortkey = column;
         this.reverse = reverse;
         this.reload();
@@ -56,7 +59,9 @@ class Library extends TrackList {
                     this.server.activePartition.play(ix);
                 },{once:true});
             },{once:true});
-            this.server.activePartition.append( [ this.tracks[row.row].file ], ix);
+            if (this.tracks[row.row] && this.tracks[row.row].file) {
+                this.server.activePartition.append( [ this.tracks[row.row].file ], ix);
+            }
         }
     }
 

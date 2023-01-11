@@ -1,3 +1,14 @@
+* {
+    touch-action: pan-y !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -webkit-touch-callout: none !important;
+    -webkit-user-drag: none !important;
+}
+:root.nonscrolling, :root.nonscrolling * {
+    touch-action: none !important;
+    color: red;
+}
 body {
     font-family: sans-serif;
     display: flex;
@@ -10,10 +21,11 @@ body {
     --margin: 8px;
     --row-height: 1.8em;
     --action-height: 40px;
-    user-select: none;
 }
 input {
     user-select: initial;
+    touch-action: initial;
+    font-size: 1.2em;
 }
 input[type=range], label {
     flex-grow: 1;
@@ -116,6 +128,7 @@ body > .column-resize {
 }
 .table .table-menu {
     position: absolute;
+    top: 0;
     right: 0;
     z-index: 8;
     padding: 2px 2px 2px 4px;
@@ -220,12 +233,16 @@ body > .column-resize {
 }
 .icon.small {
     height: 50%;
-    margin: 0 0.5em;
+    margin: 0 0.2em;
+}
+.spacer {
+    min-width: 15px;
+    flex-grow: 1;
 }
 .icon {
     height: 90%;
     aspect-ratio: 1;
-    margin: 0 1em;
+    margin: 0 0.2em;
     background: no-repeat center/contain content-box url("resources/bin.svg");
 }
 .icon.trackstart                                        { background-image: url("resources/trackstart.svg"); }
@@ -291,7 +308,7 @@ body > .column-resize {
     background: no-repeat center/cover content-box url("resources/music.svg");
     padding: 20px;
     width: 80px;
-    aspect-ratio: 1;
+    height: 80px;
     z-index: 8;
 }
 

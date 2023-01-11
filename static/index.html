@@ -2,16 +2,17 @@
 <html>
  <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>MPD</title>
 
-  <script src="js/Context.js"></script>
-  <script src="js/Server.js"></script>
-  <script src="js/TrackList.js"></script>
-  <script src="js/Partition.js"></script>
-  <script src="js/Playlist.js"></script>
-  <script src="js/Library.js"></script>
-  <script src="js/script.js"></script>
-  <link rel="stylesheet" href="style.css">
+  <script src="js/Context.js?"></script>
+  <script src="js/Server.js?"></script>
+  <script src="js/TrackList.js?"></script>
+  <script src="js/Partition.js?"></script>
+  <script src="js/Playlist.js?"></script>
+  <script src="js/Library.js?"></script>
+  <script src="js/script.js?"></script>
+  <link rel="stylesheet" href="style.css?">
 
   <!-- This object is cloned for each new partition -->
   <section id="partition-template" class="partition">
@@ -20,9 +21,7 @@
     <input type="range" data-action="position" data-field="position" min="0" max="100"/>
     <a class="icon trackend small"></a>
     <output data-field="position">-:-- / -:--</output>
-
-    <div style="flex-grow: 1"></div>
-
+    <div class="spacer"></div>
     <a class="icon" data-action="previous"></a>
     <a class="icon" data-action="play" data-field="playstate"></a>
     <a class="icon" data-action="next"></a>
@@ -31,15 +30,11 @@
     <input type="range" data-action="volume" data-field="volume" min="0" max="100"/>
     <a class="icon small" data-action="volumeup"></a>
     <output data-field="volume">50%</output>
-
-    <div style="flex-grow: 1"></div>
-
+    <div class="spacer"></div>
     <a class="icon" data-action="mode" data-field="mode"></a>
     <a class="icon" data-action="random" data-field="random"></a>
     <a class="icon" data-action="replaygain" data-field="replaygain"></a>
-
-    <div style="flex-grow: 1"></div>
-
+    <div class="spacer"></div>
     <a class="icon menu" data-action="speaker">
      <div class="popup hidden" data-action="outputselect"></div>
     </a>

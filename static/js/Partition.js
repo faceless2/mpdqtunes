@@ -111,12 +111,12 @@ class Partition extends TrackList {
                 this.dispatchEvent(new Event("random"));
             }
             if (track != this.track || duration != this.duration) {
-                if (this.rows && typeof(this.track) == "number" && this.track >= 0 && this.track < this.rows.length) {
-                    this.rows[this.track].classList.remove("nowplaying");
+                if (typeof(this.track) == "number" && this.track >= 0 && this.track < this.tracks.length && this.tracks[this.track].row) {
+                    this.tracks[this.track].row.classList.remove("nowplaying");
                 }
                 that.track = track;
-                if (this.rows && typeof(this.track) == "number" && this.track >= 0 && this.track < this.rows.length) {
-                    this.rows[this.track].classList.add("nowplaying");
+                if (this.track >= 0 && this.track < this.tracks.length && this.tracks[this.track].row) {
+                    this.tracks[this.track].row.classList.add("nowplaying");
                 }
                 that.duration = duration;
                 that.dispatchEvent(new Event("track"));
