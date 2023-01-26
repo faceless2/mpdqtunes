@@ -108,7 +108,9 @@ class Playlist extends TrackList {
             ctx.tx("rename \"" + ctx.esc(this.name) + "\" \"" + ctx.esc(name) + "\"", (err, rx) => {
                 if (!err) {
                     let oldid = that.id;
-                    let newid = "playlist-" + ctx.sanitize(name);
+                    that.name = name;
+                    that.postrename();
+                    let newid = that.id;
                     document.querySelectorAll("a[href=\"#" + oldid + "\"]").forEach((e) => {
                         e.href = "#" + newid;
                         e.innerHTML = name;
@@ -117,8 +119,7 @@ class Playlist extends TrackList {
                     document.querySelectorAll("[data-for=\"" + oldid + "\"]").forEach((e)=> {
                        e.setAttribute("data-for", newid);
                     });
-                    that.id = newid;
-                    that.name = name;
+                    that.pendingResize = true;          // Required
                     window.location = "#" + newid;
                 }
             });
@@ -127,6 +128,8 @@ class Playlist extends TrackList {
 
     destroy() {
         ctx.tx("rm \"" + ctx.esc(this.name) + "\"");
+        ctx.preferences.delete[this.id];
+        ctx.savePreferences();
         this.server.playlists.splice(this.server.playlists.indexOf(this), 1);;
         if (this.active) {
             ctx.activate(this.server.library.id);

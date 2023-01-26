@@ -40,7 +40,7 @@ class Server extends EventTarget {
                         ctx.tx("listplaylists", (err,rx) => {
                             for (let l of rx) {
                                 if (l.key == "playlist") {
-                                    server.addPlaylist(l.value);
+                                    server.addPlaylist(l.value, true);
                                 }
                             }
                             document.querySelectorAll("#nav [data-for=\"" + server.id + "\"] [data-field=\"playlists\"]").forEach((e) => {
@@ -108,7 +108,7 @@ class Server extends EventTarget {
         });
     }
 
-    addPlaylist(name) {
+    addPlaylist(name, sort) {
         const server = this;
         const tree = document.getElementById("playlist-template").cloneNode(true);
         tree.id = "";
@@ -120,6 +120,11 @@ class Server extends EventTarget {
             elt_table: tree.querySelector(".table"),
         });
         server.playlists.push(playlist);
+        if (sort) {
+            server.playlists.sort((a,b) => {
+                return a.name.localeCompare(b.name, "en", { ignorePunctuation: true, sensitivity: "base" });
+            });
+        }
 
         // Populate nav
         document.querySelectorAll("#nav [data-for=\"" + server.id + "\"] [data-field=\"playlists\"]").forEach((e) => {
@@ -134,7 +139,12 @@ class Server extends EventTarget {
                 ctx.tx("load \"" + ctx.esc(playlist.name) + "\"");
                 server.activePartition.play(0);
             });
-            e.appendChild(a);
+            let ix = server.playlists.indexOf(playlist);
+            if (ix < 0 || ix == server.playlists.length - 1 || ix >= e.children.length) {
+                e.appendChild(a);
+            } else {
+                e.insertBefore(a, e.children[ix]);
+            }
         });
         // Populate input widgets
         tree.querySelectorAll("[data-action=\"name\"]").forEach((e) => {

@@ -79,6 +79,12 @@ class Context extends EventTarget {
         if (this.preferences) {
             try {
                 this.preferences = JSON.parse(this.preferences);
+                // Clear empty objects. We can only do this on load, never on save - if we remove items, we won't pick up later changes
+                for (let key in this.preferences) {
+                    if (typeof(this.preferences[key]) == "object" && Object.keys(this.preferences[key]).length == 0) {
+                        delete this.preferences[key];
+                    }
+                }
             } catch (e) {
                 this.preferences = {};
             }

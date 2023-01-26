@@ -50,6 +50,16 @@ class TrackList extends EventTarget {
         this.reverse = this.preferences.reverse || false;
     }
 
+    postrename() {
+        let oldid = this.id;
+        this.id = this.server.id + (this.type == "library" ? "_" : "_" + this.type + "_") + ctx.sanitize(this.name);
+        if (this.id != oldid) {
+            ctx.preferences[this.id] = this.preferences;
+            delete ctx.preferences[oldid];
+            ctx.savePreferences();
+        }
+    }
+
     activate(active) {
         if (active) {
             if (!this.tracks) {
