@@ -223,7 +223,7 @@ function mouseHandler(e) {
         }
         if (mouseData.dropTarget.getAttribute("data-action") == "newplaylist") {
             // Drop onto "new playlist" action
-            let name = "New Playlist";
+            let name = mouseData.trackList.nameNewPlaylistFromSelection();
             for (let p of mouseData.server.playlists) {
                 if (p.name == name) {
                     let found = true;

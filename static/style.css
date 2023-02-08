@@ -178,6 +178,20 @@ body > .column-resize {
     background-size: 5.66px 5.66px;
     background-color: initial;
 }
+@keyframes newly-added {
+    0% {
+        background: #F88;
+    }
+    99% {
+        background: white;
+    }
+    100% {
+        background: unset;
+    }
+}
+.newly-added {
+    animation: newly-added 1s linear 1;
+}
 
 /**
  * Navigation pane items

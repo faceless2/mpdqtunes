@@ -104,7 +104,12 @@ class Server extends EventTarget {
             l.push("playlistadd \"" + ctx.esc(name) + "\" \"" + ctx.esc(f) + "\" " + l.length);
         }
         ctx.tx(l, (err, rx) => {
-            this.addPlaylist(name);
+            let playlist = this.addPlaylist(name, true);
+            playlist.elt_nav.scrollIntoView();
+            playlist.elt_nav.classList.add("newly-added");
+            setTimeout(()=>{
+                playlist.elt_nav.classList.remove("newly-added");
+            }, 5000);
         });
     }
 
@@ -140,10 +145,13 @@ class Server extends EventTarget {
                 server.activePartition.play(0);
             });
             let ix = server.playlists.indexOf(playlist);
-            if (ix < 0 || ix == server.playlists.length - 1 || ix >= e.children.length) {
+            if (ix < 0 || ix >= e.children.length) {
                 e.appendChild(a);
             } else {
                 e.insertBefore(a, e.children[ix]);
+            }
+            if (!playlist.elt_nav) {
+                playlist.elt_nav = a;
             }
         });
         // Populate input widgets
@@ -186,6 +194,7 @@ class Server extends EventTarget {
         });
 
         server.#addArtworkListener(tree, playlist);
+        return playlist;
     }
 
     addPartition(name) {
@@ -452,4 +461,5 @@ class Server extends EventTarget {
             }
         }
     }
+
 }

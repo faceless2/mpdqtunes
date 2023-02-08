@@ -128,7 +128,7 @@ class Playlist extends TrackList {
 
     destroy() {
         ctx.tx("rm \"" + ctx.esc(this.name) + "\"");
-        ctx.preferences.delete[this.id];
+        delete ctx.preferences[this.id];
         ctx.savePreferences();
         this.server.playlists.splice(this.server.playlists.indexOf(this), 1);;
         if (this.active) {

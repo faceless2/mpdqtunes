@@ -526,4 +526,44 @@ class TrackList extends EventTarget {
         return newtracks;
     }
 
+    /**
+     * Given the selection of tracks, try to identify something
+     * in common across all of them to auto-name the new playlist
+     */
+    nameNewPlaylistFromSelection() {
+        let selection = this.getSelection();
+        let start = Math.min(selection.start.row, selection.end.row);
+        let end = Math.max(selection.start.row, selection.end.row);
+        let samevals = {};
+        for (let key in ctx.availableColumns) {
+            let value = null;
+            let ok = true;
+            for (let i=start;i<=end;i++) {
+                let t  = this.tracks[i];
+                if (ok && !value && t[key] !== null) {
+                    value = t[key];
+                } else if (ok && value != null && value != t[key]) {
+                    ok = false;
+                }
+            }
+            if (ok && value !== null) {   // All track have the same key
+                samevals[key] = value;
+            }
+        }
+        if (samevals.album && samevals.artist) {
+            return samevals.artist + " - " + samevals.album;
+        } else if (samevals.album && samevals.albumartist) {
+            return samevals.albumartist + " - " + samevals.album;
+        } else if (samevals.album && samevals.composer) {
+            return samevals.composer + " - " + samevals.album;
+        } else if (samevals.artist) {
+            return samevals.artist;
+        } else if (samevals.albumartist) {
+            return samevals.albumartist;
+        } else if (samevals.composer) {
+            return samevals.composer;
+        } else {
+            return "New Playlist";
+        }
+    }
 }
