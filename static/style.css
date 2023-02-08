@@ -17,6 +17,8 @@ body {
     overflow: hidden;
     --background-color: white;
     --foreground-color: rgb(0 0 0);
+    --nav-background-color: white;
+    --nav-foreground-color: rgb(0 0 0);
     --alternate-background-color: rgb(0 0 0 / 0.03);    /* want alpha to go over images */
     --edge-color: #aaaaaa;
     --action-background-color: #dddddd;
@@ -30,6 +32,7 @@ body {
     --action-height: 40px;
     color: var(--foreground-color);
     background: var(--background-color);
+    line-height: 1.4;
 }
 input {
     user-select: initial;
@@ -61,6 +64,8 @@ nav {
     width: 15%;
     padding: var(--margin);
     overflow-y: auto;
+    background: var(--nav-background-color);
+    color: var(--nav-foreground-color);
 }
 main {
     flex: 1;
@@ -354,10 +359,11 @@ body > .column-resize {
 
 img.coverart {
     position: absolute;
-    right: 0;
-    bottom: 0;
+    left: 0%;
+    top: 90px;
+    min-width: 100%;
+    min-height: calc(100% - 90px);
     aspect-ratio: 1;
-    height: calc(100% - 90px);
     z-index: -1;
     opacity: 0.2;
 }

@@ -98,13 +98,13 @@ class Server extends EventTarget {
         }
     }
 
-    createPlaylist(name, files) {
+    createPlaylist(name, files, columns) {
         let l = [];
         for (let f of files) {
             l.push("playlistadd \"" + ctx.esc(name) + "\" \"" + ctx.esc(f) + "\" " + l.length);
         }
         ctx.tx(l, (err, rx) => {
-            let playlist = this.addPlaylist(name, true);
+            let playlist = this.addPlaylist(name, true, columns);
             playlist.elt_nav.scrollIntoView();
             playlist.elt_nav.classList.add("newly-added");
             setTimeout(()=>{
@@ -113,7 +113,7 @@ class Server extends EventTarget {
         });
     }
 
-    addPlaylist(name, sort) {
+    addPlaylist(name, sort, columns) {
         const server = this;
         const tree = document.getElementById("playlist-template").cloneNode(true);
         tree.id = "";
@@ -123,6 +123,7 @@ class Server extends EventTarget {
             name: name,
             elt: tree,
             elt_table: tree.querySelector(".table"),
+            columns: columns
         });
         server.playlists.push(playlist);
         if (sort) {

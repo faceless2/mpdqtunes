@@ -85,6 +85,7 @@ class Partition extends TrackList {
             if (that.track >= 0 && that.track < that.tracks.length && that.tracks[that.track].row) {
                 that.tracks[that.track].row.classList.add("nowplaying");
             }
+            that.dispatchEvent(new Event("track"));
         }
         ctx.tx("status", (err,rx) => {
             let single = 0, repeat = false, random = false, playstate = null, elapsed = 0, duration = 0, volume = 0, playlistVersion = 0, playlistLength = 0, track = 0;
@@ -120,9 +121,8 @@ class Partition extends TrackList {
                 that.dispatchEvent(new Event("random"));
             }
             if (track != that.track || duration != that.duration) {
-                updateNowPlaying(track);
                 that.duration = duration;
-                that.dispatchEvent(new Event("track"));
+                updateNowPlaying(track);
             }
             let mode;
             if (repeat && single == "1") {

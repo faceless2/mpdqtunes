@@ -45,6 +45,10 @@ class TrackList extends EventTarget {
         this.preferences = ctx.preferences[this.id];
         if (!this.preferences) {
             this.preferences = ctx.preferences[this.id] = {};
+            if (opts.columns) {
+                this.preferences.columns = opts.columns;
+                ctx.savePreferences();
+            }
         }
         this.sortkey = this.preferences.sortkey || "index";
         this.reverse = this.preferences.reverse || false;

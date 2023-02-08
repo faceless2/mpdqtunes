@@ -239,7 +239,7 @@ function mouseHandler(e) {
                     break;
                 }
             }
-            mouseData.server.createPlaylist(name, files);
+            mouseData.server.createPlaylist(name, files, Object.assign({}, mouseData.trackList.columns));
         } else {
             // Drop onto existing playlist
             let alt = e.shiftKey;
