@@ -414,10 +414,7 @@ class Server extends EventTarget {
             });
         } else if (tree.querySelectorAll(selector)) {
             let img = tracklist.server.covers[file];
-            if (!img) {
-                tracklist.server.covers[file] = img = {off:0,buf:[]};
-            }
-            if (img.url) {
+            if (img && img.url) {
                 tree.querySelectorAll(selector).forEach((e) => {
                     if (e.tagName == "IMG") {
                         e.setAttribute("src", img.url);
@@ -425,13 +422,13 @@ class Server extends EventTarget {
                         e.style.backgroundImage = img.url;
                     }
                 });
-            } else {
+            } else if (!img) {  // So only one instance is driving the requests
+                tracklist.server.covers[file] = img = {buf:[]};
                 let cb = (err, rx) => {
                     if (!err) {
                         for (let l of rx) {
                             if (l.key == "binary") {
                                 img.buf.push(l.value);
-                                img.off += l.value.byteLength;
                             } else if (l.key == "size") {
                                 img[l.key] = l.value * 1;
                             } else if (l.key == "type") {
@@ -440,8 +437,12 @@ class Server extends EventTarget {
                                 img[l.key] = l.value;
                             }
                         }
-                        if (img.off < img.size) {
-                            ctx.tx("readpicture \"" + file + "\" " + img.off, cb);
+                        let off = 0;
+                        for (let b of img.buf) {
+                            off += b.byteLength;
+                        }
+                        if (off < img.size) {
+                            ctx.tx("readpicture \"" + file + "\" " + off, cb);
                         } else {
                             if (!/^image\/[a-z]*$/.test(img.type)) {
                                 img.type = "image/jpeg";
@@ -458,7 +459,11 @@ class Server extends EventTarget {
                         }
                     }
                 };
-                ctx.tx("readpicture \"" + file + "\" " + img.off, cb);
+                let off = 0;
+                for (let b of img.buf) {
+                    off += b.byteLength;
+                }
+                ctx.tx("readpicture \"" + file + "\" " + off, cb);
             }
         }
     }
