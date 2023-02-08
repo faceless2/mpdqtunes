@@ -1,25 +1,9 @@
-* {
-    touch-action: pan-y !important;
-    user-select: none !important;
-    -webkit-user-select: none !important;
-    -webkit-touch-callout: none !important;
-    -webkit-user-drag: none !important;
-}
-:root.nonscrolling, :root.nonscrolling * {
-    touch-action: none !important;
-    color: red;
-}
-body {
-    font-family: sans-serif;
-    display: flex;
-    height: 100vh;
-    margin: 0;
-    overflow: hidden;
+:root {
     --background-color: white;
-    --foreground-color: rgb(0 0 0);
-    --nav-background-color: white;
-    --nav-foreground-color: rgb(0 0 0);
-    --alternate-background-color: rgb(0 0 0 / 0.03);    /* want alpha to go over images */
+    --foreground-color: black;
+    --nav-background-color: var(--background-color);
+    --nav-foreground-color: var(--foreground-color);
+    --alternate-background-color: rgb(0 0 0 / 0.03);    /* alpha, to go over images */
     --edge-color: #aaaaaa;
     --action-background-color: #dddddd;
     --newly-added-background-color: #0680c7;
@@ -30,17 +14,79 @@ body {
     --margin: 8px;
     --row-height: 1.8em;
     --action-height: 40px;
+    --font-family: sans-serif;
+    --font-size: 16px;
+    --line-height: 1.4;
+    --spacer-width: 15px;
+    --range-width: auto;
+    --min-column-width: 40px;   /* sadly must be in pixels */
+}
+@media (prefers-color-scheme: dark) {
+    :root {
+        --background-color: rgb(10% 10% 10%);
+        --foreground-color: #eee;
+        --alternate-background-color: rgb(100% 100% 100% / 0.03);
+        --edge-color: #666666;
+        --action-background-color: #808080;
+        --selected-background-color: #136b9e;
+        --now-playing-background-color: #82674a;
+    }
+}
+@media (max-width: 800px) {
+    :root {
+        --font-size: 12px;
+        --action-height: 30px;
+    }
+}
+@media (max-width: 1030px) {
+    :root {
+        --margin: 0;
+        --spacer-width: 5px;
+        --range-width: 6vw;
+    }
+    .icon.trackstart, .icon.trackend {
+        display: none;
+    }
+}
+
+/* Below are the actual styles */
+
+
+* {
+    touch-action: pan-y !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -webkit-touch-callout: none !important;
+    -webkit-user-drag: none !important;
+}
+:root.nonscrolling, :root.nonscrolling * {
+    touch-action: none !important;
+}
+:root {
+    font-family: var(--font-family);
+    font-size: var(--font-size);
+    line-height: var(--line-height);
+}
+body {
+    display: flex;
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
     color: var(--foreground-color);
     background: var(--background-color);
-    line-height: 1.4;
 }
+
 input {
     user-select: initial;
     touch-action: initial;
     font-size: 1.2em;
 }
 input[type=range], label {
-    flex-grow: 1;
+    flex: 1 1 auto;
+}
+input[type=range] {
+    /* nested flex doesn't work, these expand. So have to set max-width */
+    max-width: var(--range-width);
 }
 label {
     display: flex;
@@ -61,6 +107,7 @@ a {
     display: block;
 }
 nav {
+    min-width: 8em;
     width: 15%;
     padding: var(--margin);
     overflow-y: auto;
@@ -274,8 +321,8 @@ body > .column-resize {
     margin: 0 0.2em;
 }
 .spacer {
-    min-width: 15px;
-    flex-grow: 1;
+    min-width: var(--spacer-width);
+    flex: 1 1 auto;
 }
 .icon {
     height: 90%;
@@ -358,11 +405,12 @@ body > .column-resize {
 }
 
 img.coverart {
+    --top: calc(var(--action-size) + var(--row-height) + var(--margin) + 13px); /* ish */
     position: absolute;
     left: 0%;
-    top: 90px;
+    top: var(--top);
     min-width: 100%;
-    min-height: calc(100% - 90px);
+    min-height: calc(100% - var(--top));
     aspect-ratio: 1;
     z-index: -1;
     opacity: 0.2;

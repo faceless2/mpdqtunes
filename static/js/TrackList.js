@@ -18,6 +18,7 @@ class TrackList extends EventTarget {
     #selectEnd;
     #columnResizeWidth;
     #rowHeight;
+    #minColumnWidth;
     preferences;
 
     constructor(opts) {
@@ -233,6 +234,7 @@ class TrackList extends EventTarget {
             let headerRow;
             const initialize = this.columns == null;
             if (initialize) {
+                this.#minColumnWidth = getComputedStyle(this.elt_table).getPropertyValue("--min-column-width").replace(/px$/, "");  // boo, want to eval
                 this.columns = this.preferences.columns;
                 if (!this.columns) {
                     this.columns = this.preferences.columns = {}
@@ -411,7 +413,7 @@ class TrackList extends EventTarget {
     resize(col, diff) {
         const numColumns = Object.keys(this.columns).length;
         const availWidth = this.elt_table.getBoundingClientRect().width + this.elt_table.clientWidth - this.elt_table.offsetWidth;
-        const minWidth = Math.min(availWidth / numColumns, 40);
+        const minWidth = Math.min(availWidth / numColumns, this.#minColumnWidth);
         let currentWidth = 0;
         let i = 0;
         for (let c in this.columns) {
