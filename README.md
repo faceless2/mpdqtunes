@@ -22,7 +22,7 @@ I couldn't find a client that could handle multiple partitions from a single int
 
 ## 2. Proxy server
 
-An ultra-simple web-server which acts as a proxy between one or more [MPD](https://musicpd.org) server and one or more web-clients. MPD servers are discovered automaticallty by Zeroconf (although this is optional).
+An ultra-simple web-server which acts as a proxy between one or more [MPD](https://musicpd.org) servers and one or more web-clients. MPD servers are discovered automaticallty by Zeroconf (although this is optional).
 
 Intended to serve as a basic starting point for any MPD web-client, by default it embeds the web-interface parts of this project but can also serve files from the filesystem .
 
@@ -39,7 +39,7 @@ Any HTTP requests for paths other than `/ws` are served from the filesystem.
 Thanks to the [Moongoose](https://mongoose.ws) project for all the web-server bits.
 
 ### Building
-Type `make`. To build with Zeroconf support, install `libavahi-client-dev` before you type `make`
+Type `make`. To build with Zeroconf support, install `libavahi-client-dev` before you type `make`. Then just run `mpdqtunes` for normal use, or `mpdqtunes --help` for more info.
 
 ### Standalone Example
 
