@@ -15,12 +15,21 @@ body {
     height: 100vh;
     margin: 0;
     overflow: hidden;
-    --selected: #08A4;
-    --now-playing: #F804;
-    --drop-target-color: red;
+    --background-color: white;
+    --foreground-color: rgb(0 0 0);
+    --alternate-background-color: rgb(0 0 0 / 0.03);    /* want alpha to go over images */
+    --edge-color: #aaaaaa;
+    --action-background-color: #dddddd;
+    --newly-added-background-color: #0680c7;
+    --newly-added-foreground-color: white;
+    --selected-background-color: #b0e2ff;
+    --now-playing-background-color: #ffcf9B;
+    --drop-target-color: #0694c7;
     --margin: 8px;
     --row-height: 1.8em;
     --action-height: 40px;
+    color: var(--foreground-color);
+    background: var(--background-color);
 }
 input {
     user-select: initial;
@@ -85,14 +94,14 @@ main > *:target {
     position: relative;
 }
 .tr:where(:nth-child(2n+3)) {
-    background: #00000008;
+    background-color: var(--alternate-background-color);
 }
 .thead {
     top: 0;
     position: sticky;
-    border-bottom: 2px solid #aaa;
+    border-bottom: 2px solid var(--edge-color);
     z-index: 5;
-    background: white;
+    background: var(--background-color);
     margin-bottom: 2px;
 }
 .td, .th {
@@ -101,7 +110,15 @@ main > *:target {
     white-space: pre;
     overflow: hidden;
     padding: 0 4px;
-    text-shadow: 0 0 2px white; /* because of coverart */
+    text-shadow: 0 0 2px var(--background-color); /* because of coverart */
+}
+.td:not(:first-child) {
+    margin-left: -1px;  /* to line up exactly under header */
+    border-left: 1px solid var(--alternate-background-color);
+}
+.td:empty::before {
+    content: "-";
+    opacity: 0.3;
 }
 .th {
     font-weight: bold;
@@ -119,7 +136,7 @@ main > *:target {
     width: 2px;
     padding: 0 2px;
     height: 100%;
-    background: #aaa;
+    background: var(--edge-color);
     background-clip: content-box;
     cursor: col-resize;
 }
@@ -135,7 +152,7 @@ body > .column-resize {
     width: 20px;
     height: var(--row-height);
     box-sizing: border-box;
-    background: no-repeat center/contain content-box url("resources/menu.svg"), white;
+    background: no-repeat center/contain content-box url("resources/menu.svg"), var(--background-color);
 }
 .table .table-menu .popup {
     top: calc(var(--row-height) + 4px);
@@ -165,28 +182,30 @@ body > .column-resize {
     z-index: 2;
 }
 .disabled {
-    color: #aaa;
+    color: var(--disabled-color);
 }
 .selected {
-    background: var(--selected);
+    background: var(--selected-background-color);
 }
 .nowplaying {
-    background: var(--now-playing);
+    background: var(--now-playing-background-color);
 }
 .tr.selected.nowplaying {
-    background-image: linear-gradient(45deg, var(--now-playing) 25%, var(--selected) 25%, var(--selected) 50%, var(--now-playing) 50%, var(--now-playing) 75%, var(--selected) 75%, var(--selected) 100%);
+    /*
+    background-image: linear-gradient(45deg, var(--now-playing-background-color) 25%, var(--selected-background-color) 25%, var(--selected-background-color) 50%, var(--now-playing-background-color) 50%, var(--now-playing-background-color) 75%, var(--selected-background-color) 75%, var(--selected-background-color) 100%);
     background-size: 5.66px 5.66px;
+    */
+    background-image: linear-gradient(to bottom right, var(--now-playing-background-color), var(--selected-background-color));
     background-color: initial;
 }
 @keyframes newly-added {
     0% {
-        background: #F88;
-    }
-    99% {
-        background: white;
+        color: var(--newly-added-foreground-color);
+        background: var(--newly-added-background-color);
     }
     100% {
-        background: unset;
+        color: var(--foreground-color);
+        background: var(--background-color);
     }
 }
 .newly-added {
@@ -209,8 +228,8 @@ body > .column-resize {
 [data-field="partitions"] {
     margin: 4px 0;
     padding: 4px 0;
-    border-top: 1px solid #aaa;
-    border-bottom: 1px solid #aaa;
+    border-top: 1px solid var(--edge-color);
+    border-bottom: 1px solid var(--edge-color);
 }
 
 .partition.active::after {
@@ -237,7 +256,7 @@ body > .column-resize {
  */
 .action {
     flex: 0 0 var(--action-height);
-    background: #ddd;
+    background: var(--action-background-color);
     display: flex;
     justify-content: space-between;
     padding: var(--margin) var(--margin) 4px var(--margin);
@@ -286,8 +305,8 @@ body > .column-resize {
     position: absolute;
     z-index: 20;
     right: 4px;
-    border: 1px solid black;
-    background: white;
+    border: 1px solid var(--foreground-color);
+    background: var(--background-color);
     padding: 8px;
     top: 20px;
 }
@@ -306,7 +325,7 @@ body > .column-resize {
     width: 120px;
     aspect-ratio: 0.75;
     padding: 10px;
-    border: 2px solid black;
+    border: 2px solid var(--foreground-color);
     --bg: white;
     background: no-repeat center/cover content-box url("resources/bin.svg"), var(--bg);
     z-index: 5;
@@ -314,7 +333,7 @@ body > .column-resize {
 }
 
 #bin.drop-target {
-    --bg: var(--selected);
+    --bg: var(--selected-background-color);
 }
 
 #drag { /* this is the thing we see when we drag */
