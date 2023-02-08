@@ -52,19 +52,19 @@ class Partition extends TrackList {
             return;
         }
         this.#loading = true;
-        let that = this;
-        if (!this.outputs) {
-            this.outputs = [];
+        const that = this;
+        if (!that.outputs) {
+            that.outputs = [];
             ctx.tx("outputs", (err,rx) => {
-                this.outputs.length = 0;
+                that.outputs.length = 0;
                 for (let l of rx) {
                     if (l.key == "outputid") {
-                        this.outputs.push({});
+                        that.outputs.push({});
                     } else {
-                        this.outputs[this.outputs.length - 1][l.key] = l.value;
+                        that.outputs[that.outputs.length - 1][l.key] = l.value;
                     }
                 }
-                this.dispatchEvent(new Event("outputlist"));
+                that.dispatchEvent(new Event("outputlist"));
             });
         }
         ctx.tx("replay_gain_status", (err,rx) => {
@@ -77,6 +77,15 @@ class Partition extends TrackList {
                 }
             }
         });
+        function updateNowPlaying(track) {
+            if (typeof(that.track) == "number" && that.track >= 0 && that.track < that.tracks.length && that.tracks[that.track].row) {
+                that.tracks[that.track].row.classList.remove("nowplaying");
+            }
+            that.track = track;
+            if (that.track >= 0 && that.track < that.tracks.length && that.tracks[that.track].row) {
+                that.tracks[that.track].row.classList.add("nowplaying");
+            }
+        }
         ctx.tx("status", (err,rx) => {
             let single = 0, repeat = false, random = false, playstate = null, elapsed = 0, duration = 0, volume = 0, playlistVersion = 0, playlistLength = 0, track = 0;
             for (let l of rx) {
@@ -102,22 +111,16 @@ class Partition extends TrackList {
                     playlistLength = l.value * 1;
                 }
             }
-            if (volume != this.volume) {
-                this.volume = volume;
-                this.dispatchEvent(new Event("volume"));
+            if (volume != that.volume) {
+                that.volume = volume;
+                that.dispatchEvent(new Event("volume"));
             }
-            if (random != this.random) {
-                this.random = random;
-                this.dispatchEvent(new Event("random"));
+            if (random != that.random) {
+                that.random = random;
+                that.dispatchEvent(new Event("random"));
             }
-            if (track != this.track || duration != this.duration) {
-                if (typeof(this.track) == "number" && this.track >= 0 && this.track < this.tracks.length && this.tracks[this.track].row) {
-                    this.tracks[this.track].row.classList.remove("nowplaying");
-                }
-                that.track = track;
-                if (this.track >= 0 && this.track < this.tracks.length && this.tracks[this.track].row) {
-                    this.tracks[this.track].row.classList.add("nowplaying");
-                }
+            if (track != that.track || duration != that.duration) {
+                updateNowPlaying(track);
                 that.duration = duration;
                 that.dispatchEvent(new Event("track"));
             }
@@ -168,13 +171,14 @@ class Partition extends TrackList {
                     tracks.sort((a,b)=> {
                         return a.pos = b.pos;
                     })
-                    this.#loading = false;
-                    this.dispatchEvent(new Event("load"));
+                    that.#loading = false;
+                    that.dispatchEvent(new Event("load"));
                     that.rebuild();
+                    updateNowPlaying(that.track);
                 });
             } else {
-                this.#loading = false;
-                this.dispatchEvent(new Event("load"));
+                that.#loading = false;
+                that.dispatchEvent(new Event("load"));
             }
             that.#updateTimer();
         });

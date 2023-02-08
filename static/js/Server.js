@@ -383,8 +383,9 @@ class Server extends EventTarget {
         });
         tracklist.addEventListener("track", (e) => {
             let file;
-            if (tracklist.track) {
-                file = tracklist.tracks[tracklist.track].file;
+            if (typeof(tracklist.track) == "number") {
+                let track = tracklist.tracks[tracklist.track];
+                file = track ? track.file : null;
             } else {
                 file = null;
             }
