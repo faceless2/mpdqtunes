@@ -255,18 +255,18 @@ class TrackList extends EventTarget {
                 menu.addEventListener("click", (e) => {
                     popup.classList.toggle("hidden");
                 });
-                let that = this;
+                const that = this;
                 for (let col in ctx.availableColumns) {
                     let a = document.createElement("a");
                     a.appendChild(document.createTextNode(ctx.availableColumns[col]));
-                    a.classList.toggle("disabled", typeof(this.columns[col]) == "undefined");
+                    a.classList.toggle("disabled", typeof(that.columns[col]) == "undefined");
                     a.addEventListener("click", (e) => {
                         e.preventDefault();
-                        if (typeof(this.columns[col]) == "undefined") {
-                            this.columns[col] = 0;
+                        if (typeof(that.columns[col]) == "undefined") {
+                            that.columns[col] = 0;
                             e.target.classList.remove("disabled");
                         } else {
-                            delete this.columns[col];
+                            delete that.columns[col];
                             e.target.classList.add("disabled");
                         }
                         that.rebuild();
@@ -322,6 +322,11 @@ class TrackList extends EventTarget {
                 e2 = e.previousSibling;
                 if (e.nodeType != Node.ELEMENT_NODE || typeof(e.row) == "number") {
                    e.remove();
+                }
+            }
+            for (let t of this.tracks) {
+                if (t) {
+                    delete t.row;
                 }
             }
 
