@@ -31,6 +31,8 @@ Type `make`. To build with Zeroconf support, install `libavahi-client-dev` befor
 
 ## Web Client
 
+![bg](https://user-images.githubusercontent.com/989243/217526602-7e46e060-8022-4443-823b-0db887212ba2.jpg)
+
 I couldn't find a client that could handle multiple partitions from a single interface, or that didn't depend on a dozen different frameworks, so this was the result. It's inspired by the iTunes interface before iTunes went bad.
 
 * Tested with 50,000+ tracks, the main Library is presented as a single table, but scrolling loads more data
@@ -38,7 +40,6 @@ I couldn't find a client that could handle multiple partitions from a single int
 * Tracks are dragged onto players or playlists, or double-click to play immediately.
 * JS and stylesheets are commented and as clean as I can get them.
 
-![image](https://user-images.githubusercontent.com/989243/208001408-0bc9dd9d-69d8-4eda-9f96-ffcc40b62b31.png)
 
 ## Standalone Example
 
