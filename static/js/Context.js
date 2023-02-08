@@ -1,31 +1,34 @@
+"use strict";
+
 /**
- * A context is a single WS connection. One per application
+ * A Context is a single WS connection. One per application
  */
 class Context extends EventTarget {
-    #ws
-    #q = [];
-    #rx = [];
-    #lastActive;
-    debug = ["tx"];        // also "rx"
-    servers = [];
+    #ws                         // internal websocket connection
+    #q = [];                    // internal queue of pending transmissions 
+    #lastActive;                // internal name of the last-active tracklist
+    debug = ["tx"];             // debug flags. Can also set "rx"
+    servers = [];               // list of Server objects
     active;                     // the currently active TrackList
-    preferences;
-    countcmd = "searchcount";         // which is case-sensitive! See https://github.com/MusicPlayerDaemon/MPD/pull/1691
+    preferences;                // system preferences to save across sessions
+    countcmd = "searchcount";   // Command for search - "searchcount" (preferred, after MPD 0.24) or "count". https://github.com/MusicPlayerDaemon/MPD/pull/1691
 
     availableColumns = { index: "#", album: "Album", artist: "Artist", title: "Title", albumartist: "Album Artist", track: "Track", date: "Year", genre: "Genre", composer: "Composer", file: "File", disc: "Disc", duration: "Duration", time: "Time" };
     defaultColumns = [ "album", "artist", "albumartist", "title", "track", "date" ];
 
 
+    /**
+     * @param url the URL to connect the WebSocket to, or null to derive from the current window
+     */
     constructor(url) {
         super();
         if (!url) {
             url = (location.protocol == "https" ? "wss://" : "ws://") + location.host + "/ws";
         }
+        const that = this;
+
         this.#ws = new WebSocket(url);
         this.#ws.binaryType = "arraybuffer";
-
-
-        const that = this;
         this.#ws.addEventListener("message", (e) => {
             const v = e.data;
             const text = !(v instanceof ArrayBuffer);
@@ -75,6 +78,7 @@ class Context extends EventTarget {
         that.#ws.addEventListener("close", (e) => {
             // whatever
         });
+
         this.preferences = localStorage.getItem("preferences");
         if (this.preferences) {
             try {
@@ -102,6 +106,9 @@ class Context extends EventTarget {
         }
     }
 
+    /**
+     * Called when a TX is queued or an RX is complete, to send the next TX
+     */
     #poll() {
         if (this.#ws.readyState == 1 && this.#q.length && !this.#q[0].sent) {
             const debug = this.debug.includes("tx");
@@ -125,6 +132,11 @@ class Context extends EventTarget {
         }
     }
 
+    /**
+     * Queue a transmission, possibly sending it immediately.
+     * @param cmd the command - a string, or an array of strings.
+     * @param callback optional callback function which will be called on completion with (error, {key:value, key:value...})
+     */
     tx(cmd, callback) {
         if (Array.isArray(cmd)) {
             for (let s of cmd) {
@@ -142,6 +154,10 @@ class Context extends EventTarget {
         this.#poll();
     }
 
+    /**
+     * Create a new Server
+     * @param opts an object to initialise the server with
+     */
     addServer(opts) {
         opts.ctx = this;
         const server = new Server(opts);
@@ -163,7 +179,13 @@ class Context extends EventTarget {
         this.dispatchEvent(new Event("servers"));
     }
 
+    /**
+     * Select the current TrackList
+     * @param id the ID of the tracklist to display
+     * @return true if the tracklist was found and activated
+     */
     activate(id) {
+        // More complex than it should be, tries to cater for tracklists not yet being loaded
         if (id.length && id.charAt(0) == '#') {
             id = id.substring(1);
         }
@@ -274,6 +296,11 @@ class Context extends EventTarget {
         return false;
     }
 
+    /**
+     * Escape any quotes in a string. For transmissions
+     * @param z the string to escape
+     * @return the escaped string
+     */
     esc(z) {
         for (let i=0;i<z.length;i++) {
             let c = z.charAt(i);
@@ -285,6 +312,11 @@ class Context extends EventTarget {
         return z;
     }
 
+    /**
+     * Properly string the supplied String, making it usable as a CSS id
+     * @param z the string to escape
+     * @return the escaped string
+     */
     sanitize(z) {
         let out = "";
         for (let i=0;i<z.length;i++) {
@@ -298,10 +330,16 @@ class Context extends EventTarget {
         return out;
     }
 
+    /**
+     * Save the system preferences. Call after updating any save-able field
+     */
     savePreferences() {
         localStorage.setItem("preferences", JSON.stringify(this.preferences));
     }
 
+    /**
+     * Return a list of all the TrackLists available in the system
+     */
     getAllTrackLists() {
         let a = [];
         for (let server of this.servers) {

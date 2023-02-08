@@ -1,28 +1,36 @@
+"use strict";
+
+/**
+ * A Partition is a "Player" which has a "now playing" and may be linked to one or more outputs
+ */
 class Partition extends TrackList {
 
-    volume;
-    mode;
-    playstate;    // play, stop or pause
-    track;
-    random;
-    replaygain;
-    duration = 0;
-    elapsed = 0;
-    outputs;
-    #timer;
-    #loading;
-    #playlistVersion;
+    volume;             // volume - 0..100
+    mode;               // mode: "repeat-one", "repeat-all", "repeat-oneshot", "one", "all" or "oneshot"
+    playstate;          // "play", "stop" or "pause"
+    track;              // current track index
+    random;             // shuffling? boolean
+    replaygain;         // replaygain mode: "none", "auto", "track" or "album" 
+    duration = 0;       // current track duration in seconds
+    elapsed = 0;        // current track elapsed time in seconds
+    outputs;            // list of output names
+    #timer;             // internal 1s timer to update duration, track info etc
+    #loading;           // internal boolean to indicate whether date load is in progress
+    #playlistVersion;   // internal playlist version, as reported by the system. To monitor changes from other clients
 
     constructor(opts) {
         opts.type = "partition";
         super(opts);
     }
 
-    activate(active) {
+    activate(active) {  // override
         ctx.tx("partition \"" + ctx.esc(this.name) + "\"");
         super.activate(active);
     }
 
+    /**
+     * Resets the timer, either killing it or restarting it
+     */
     #updateTimer() {
         if (this.#timer) {
             clearTimeout(this.#timer);
@@ -47,6 +55,9 @@ class Partition extends TrackList {
         }
     }
 
+    /**
+     * @Override
+     */
     reload() {
         if (this.#loading) {
             return;
@@ -184,6 +195,9 @@ class Partition extends TrackList {
         });
     }
 
+    /**
+     * @Override
+     */
     append(files, index) {
         if (!this.tracks) {
             this.addEventListener("load", ()=> {
@@ -202,6 +216,9 @@ class Partition extends TrackList {
         this.reload();
     }
 
+    /**
+     * @Override
+     */
     reorder(start, len, to) {
         const that = this;
         if (to == null) {
@@ -218,11 +235,18 @@ class Partition extends TrackList {
         }
     }
 
+    /**
+     * @Override
+     */
     action(row, alt) {
         ctx.tx("play " + row.row);
         this.reload();
     }
 
+    /**
+     * Skip to the next or previous track
+     * @param delta any positive number to skip forward, negature to skip back
+     */
     skip(delta) {
         if (delta > 0) {
             ctx.tx("next");
@@ -233,6 +257,10 @@ class Partition extends TrackList {
         }
     }
 
+    /**
+     * Seek within the current track
+     * @param pos the position, which must be 0 .. this.duration
+     */
     setPosition(pos) {
         pos *= 1;
         if (pos >= 0 && pos <= this.duration) {
@@ -245,6 +273,10 @@ class Partition extends TrackList {
         }
     }
 
+    /**
+     * Set the volume
+     * @param volume the volume, which must be 0 .. 100
+     */
     setVolume(volume) {
         volume *= 1;
         if (volume >= 0 && volume <= 100) {
@@ -290,8 +322,11 @@ class Partition extends TrackList {
         }
     }
 
+    /**
+     * Set the repeat mode 
+     * @param mode the mode
+     */
     setMode(mode) {
-        console.log("M="+mode);
         const modes = [ "all", "repeat-all", "repeat-one", "repeat-oneshot", "one", "oneshot" ];
         if (modes.indexOf(mode) < 0) {
             if (this.mode == "all") {
@@ -310,6 +345,10 @@ class Partition extends TrackList {
         }
     }
 
+    /**
+     * Set the replaygain mode 
+     * @param mode the replaygain mode
+     */
     setReplayGain(replaygain) {
         const gains = [ "none", "auto", "track", "album" ];
         if (gains.indexOf(replaygain) < 0) {
@@ -326,7 +365,10 @@ class Partition extends TrackList {
         }
     }
 
-
+    /**
+     * Set the random mode
+     * @param mode true or false
+     */
     setRandom(random) {
         if (typeof(random) != "boolean") {
             random = !this.random;
@@ -338,6 +380,9 @@ class Partition extends TrackList {
         }
     }
 
+    /**
+     * @Override
+     */
     sort(column, reverse) {
         let tmptracks = [...this.tracks];
         let newtracks = TrackList.localsort(tmptracks, column, reverse);
@@ -353,7 +398,11 @@ class Partition extends TrackList {
         this.reload();
     }
 
+    /**
+     * @Override
+     */
     destroy() {
+        // Note not currently accessible from the UI
         ctx.tx("delpartition \"" + ctx.esc(this.name) + "\"");
         this.server.partitions.splice(this.server.partitons.indexOf(this), 1);
         if (this.active) {

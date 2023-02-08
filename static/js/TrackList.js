@@ -1,26 +1,38 @@
+"use strict";
+
 /**
+ * The TrackList is a generic list of Tracks
  * @param e the base element of the table
  * @param loader a function that takes (this, start, end) - loads tracks, calls set()
  */
 class TrackList extends EventTarget {
-    server;
-    elt;
-    elt_table;
-    id;
-    name;
-    tracks;
-    columns;
-    sortkey;
-    reverse;
-    #offset = 0;
-    #stylesheet;
-    #selectStart;
-    #selectEnd;
-    #columnResizeWidth;
-    #rowHeight;
-    #minColumnWidth;
-    preferences;
+    server;             // The Server this TrackList is part of
+    elt;                // The element containing this tracklist
+    elt_table;          // The table element within "elt"
+    id;                 // The element ID, derived automatically from the name
+    name;               // The TrackList name
+    tracks;             // The list of Tracks - some may be null until loaded
+    columns;            // The Map of [columnid->width] for sizing
+    sortkey;            // The ID of the column to sort on
+    reverse;            // True if the sortkey is reversed
+    preferences;        // Preferences for this TrackList, retrieved from the Context
+    #offset = 0;        // The topmost track index at the current scroll position
+    #stylesheet;        // The stylesheet element relating to this TrackList
+    #selectStart;       // The start index of any selection range, or null
+    #selectEnd;         // The end index of any selection range, or null
+    #columnResizeWidth; // The width of the column resizing element
+    #rowHeight;         // The height of each row, in pixels
+    #minColumnWidth;    // The minumum width of each column, in pixcels
 
+    /**
+     * Opts can contain
+     *  server          the Server object (required)
+     *  name            the TrackList name (required)
+     *  type            the TrackList type (library, partition or playlist)
+     *  elt             the Element containing this TrackList (required)
+     *  elt_table       the Element within "elt" containing the table for this TrackList (required)
+     *  columns         a map that contains [id,width] values to initialize the column widths (optional)
+     */
     constructor(opts) {
         super();
         this.server = opts.server;
@@ -55,6 +67,9 @@ class TrackList extends EventTarget {
         this.reverse = this.preferences.reverse || false;
     }
 
+    /**
+     * Called after this TrackList is renamed
+     */
     postrename() {
         let oldid = this.id;
         this.id = this.server.id + (this.type == "library" ? "_" : "_" + this.type + "_") + ctx.sanitize(this.name);
@@ -65,6 +80,10 @@ class TrackList extends EventTarget {
         }
     }
 
+    /**
+     * Make this Trcklist active or deactive in the UI
+     * @param active boolean
+     */
     activate(active) {
         if (active) {
             if (!this.tracks) {
@@ -97,7 +116,7 @@ class TrackList extends EventTarget {
     }
 
     /**
-     * Call on resize or scroll to display visible rows
+     * Called on resize or scroll to display visible rows
      */
     #update() {
         let style = window.getComputedStyle(this.elt_table, null);
@@ -194,10 +213,19 @@ class TrackList extends EventTarget {
         }
     }
 
+    /**
+     * Return an object with {start:startrowindex, end:endrowindex} if any tracks are selected, or null if not
+     * Note that "start" and "end" refers to the drag, not the track order: end may be <= start
+     */
     getSelection() {
         return this.#selectStart ? {start: this.#selectStart, end: this.#selectEnd} : null;
     }
 
+    /**
+     * Select a range of tracks
+     * @param start the first track that was selected, or null to select no tracks
+     * @param end the last track that was selected, or "start" to select the one track.
+     */
     select(start, end) {
         let inrange = false;
         for (let t of this.tracks) {
@@ -363,7 +391,9 @@ class TrackList extends EventTarget {
     }
 
     /**
-     * Set track "i" to the specified value. Adds to the current layout
+     * Set track "i" to the specified value, and redraws the track
+     * @param i the index
+     * @param track the Track data, eg {file:"x", artist:"y"} and any other keys
      */
     set(i, track) {
         if (i < 0 || i >= this.tracks.length) {
@@ -389,6 +419,10 @@ class TrackList extends EventTarget {
         }
     }
 
+    /**
+     * Internal method to redraw a track
+     * @param i the track index
+     */
     #redraw(i) {
         let track = this.tracks[i];
         if (track.row) {
@@ -408,7 +442,9 @@ class TrackList extends EventTarget {
     }
 
     /**
-     * Resize the columns. If "col" set, add "diff" to col, otherwise just make it fit available width
+     * Resize the columns, either after a window resize or because one has been adjusted manually
+     * @param col the name of the column that is resized, or null just to make everything fit
+     * @param if col is not null, add "diff" to it 
      */
     resize(col, diff) {
         const numColumns = Object.keys(this.columns).length;
@@ -491,6 +527,14 @@ class TrackList extends EventTarget {
         ctx.savePreferences();
     }
 
+    /**
+     * Sort tracks locally. This is required because MPD doesn't have a facility
+     * to sort a Playlist, so we do the sort here and then just recreate the list.
+     * @param track the list of tracks, which is not modified
+     * @param column the column ID to sort on
+     * @param reverse if true, reverse the sort
+     * @return a new list of tracks after sorting
+     */
     static localsort(tracks, column, reverse) {
         let newtracks = [];
         for (let i=0;i<tracks.length;i++) {
@@ -535,11 +579,15 @@ class TrackList extends EventTarget {
     }
 
     /**
-     * Given the selection of tracks, try to identify something
+     * Given the currently selection of tracks, try to identify something
      * in common across all of them to auto-name the new playlist
+     * @return the playlist name that best represents the current selection, or "New Playlist" if we have no idea.
      */
     nameNewPlaylistFromSelection() {
         let selection = this.getSelection();
+        if (!selection) {
+            return null;
+        }
         let start = Math.min(selection.start.row, selection.end.row);
         let end = Math.max(selection.start.row, selection.end.row);
         let samevals = {};

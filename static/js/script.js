@@ -1,8 +1,16 @@
 "use strict";
 
+/**
+ * This class is only static methods and data. 
+ * The DOM event handler method, and the init code
+ */
+
 let ctx;
 let mouseData = {};
 
+/** 
+ * MouseHandler and event handler for ALL elements
+ */
 function mouseHandler(e) {
     let type = e.type;
     if (e.target && (e.target.tagName == "SELECT" || e.target.tagName == "INPUT")) {
@@ -321,6 +329,9 @@ function mouseHandler(e) {
 
 }
 
+/**
+ * Initialization method
+ */
 function init() {
     ctx = new Context();
     ctx.tx("proxy-listservers", (err,rx) => {

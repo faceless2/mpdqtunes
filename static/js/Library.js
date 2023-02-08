@@ -1,3 +1,9 @@
+"use strict";
+
+/**
+ * The "Library" is the full list of tracks known to an individual MPD server
+ * Unlike other TrackList types, it is loaded in chunks, as these may be huge
+ */
 class Library extends TrackList {
 
     filter = "\"(any contains \\\"\\\")\"";
@@ -9,6 +15,9 @@ class Library extends TrackList {
         this.sortkey = this.preferences.sortkey || "album";
     }
 
+    /**
+     * @Override
+     */
     reload() {
         if (this.#loading) {
             return;
@@ -35,6 +44,9 @@ class Library extends TrackList {
         });
     }
 
+    /**
+     * @Override
+     */
     sort(column, reverse) {
         if (column == "file") {
             return;     // Can't sort on file
@@ -47,6 +59,9 @@ class Library extends TrackList {
         ctx.savePreferences();
     }
 
+    /**
+     * @Override
+     */
     action(row, alt) {
         // normal: add at current position in playlist, then play it
         // alt: add to end of playlist
@@ -65,6 +80,11 @@ class Library extends TrackList {
         }
     }
 
+    /**
+     * For TrackLists that load in chunks, this method must be defined to load the tracks
+     * @param start the first track to load
+     * @param len the number of tracks to laod
+     */
     loader(start, len) {
         const that = this;
         let sortkey = that.sortkey;
@@ -72,11 +92,11 @@ class Library extends TrackList {
             case "album": sortkey = "albumsort"; break;
             case "artist": sortkey = "artistsort"; break;
             case "albumartist": sortkey = "albumartistsort"; break;
-            case "title": sortkey = "title"; break;     // titlesort not set up for fallback in trunk
+            case "title": sortkey = "title"; break;             // titlesort only works from 0.24
             case "track": sortkey = "track"; break;
             case "date": sortkey = "date"; break;
             case "genre": sortkey = "genre"; break;
-            case "composer": sortkey = "composer"; break;       // not set up for fallback in trunk
+            case "composer": sortkey = "composer"; break;       // composersort only works from 0.24
             case "file": sortkey = "file"; break;
             case "disc": sortkey = "disc"; break;
             case "duration": sortkey = "duration"; break;

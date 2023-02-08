@@ -1,16 +1,21 @@
+"use strict";
+
+/**
+ * Playlist is a TrackList that is a random list of tracks, which can be created, 
+ * edited, deleted or loaded into a Player
+ */
 class Playlist extends TrackList {
 
-    #loading;
+    #loading;           // internal flag to note whether the tracklist is loading
 
     constructor(opts) {
         opts.type = "playlist";
         super(opts);
     }
 
-    activate(active) {
-        super.activate(active);
-    }
-
+    /**
+     * @Override
+     */
     reload() {
         if (this.#loading) {
             return;
@@ -43,6 +48,9 @@ class Playlist extends TrackList {
         });
     }
 
+    /**
+     * @Override
+     */
     reorder(start, len, to) {
         const that = this;
         if (to == null) {
@@ -69,6 +77,9 @@ class Playlist extends TrackList {
         }
     }
 
+    /**
+     * @Override
+     */
     append(files, index) {
         if (!this.tracks) {
             this.addEventListener("load", ()=> {
@@ -87,6 +98,9 @@ class Playlist extends TrackList {
         this.reload();
     }
 
+    /**
+     * @Override
+     */
     sort(column, reverse) {
         let tmptracks = [...this.tracks];
         let newtracks = TrackList.localsort(tmptracks, column, reverse);
@@ -102,6 +116,10 @@ class Playlist extends TrackList {
         this.reload();
     }
 
+    /**
+     * Rename the Playlist
+     * @param name the new name, which must be a non-empty string. Doesn't check for duplicates
+     */
     rename(name) {
         const that = this;
         if (typeof(name) == "string" && name.length && name != that.name) {
@@ -126,6 +144,9 @@ class Playlist extends TrackList {
         }
     }
 
+    /**
+     * @Override
+     */
     destroy() {
         ctx.tx("rm \"" + ctx.esc(this.name) + "\"");
         delete ctx.preferences[this.id];

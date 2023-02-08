@@ -1,9 +1,14 @@
+"use strict";
+
+/**
+ * A Server is a single MPD server.
+ */
 class Server extends EventTarget {
-    name;
-    ctx;
-    library;
-    partitions = [];
-    playlists = [];
+    name;               // The server name
+    ctx;                // The server context.
+    library;            // The server's Library object
+    partitions = [];    // The server's Partition objects
+    playlists = [];     // The server's Playlist objects
     covers = {};        // Map of file->blob URL
 
     constructor(opts) {
@@ -13,10 +18,16 @@ class Server extends EventTarget {
         this.id = this.ctx.sanitize(this.name);
     }
 
+    /**
+     * Disconnect from this server
+     */
     #disconnect() {
         this.connected = false;
     }
 
+    /**
+     * Connect to this server (disconnects from any other one)
+     */
     connect() {
         const server = this;
         if (!ctx.active || ctx.active.server != this) {
@@ -98,6 +109,13 @@ class Server extends EventTarget {
         }
     }
 
+    /**
+     * Create a new playlist on the MPD server.
+     * @param name the name of the Playlist
+     * @param files the list of filenames to add
+     * @param columns the optional map of [name,width] pairs to set the width for each column
+     * @return the new Playlist object
+     */
     createPlaylist(name, files, columns) {
         let l = [];
         for (let f of files) {
@@ -113,6 +131,13 @@ class Server extends EventTarget {
         });
     }
 
+    /**
+     * Add a new Playlist to the internal list stored in this.playlists
+     * @param name the name of the Playlist
+     * @param sort if true, sort the list of playlists. If false, add at the end
+     * @param columns the optional map of [name,width] pairs to set the width for each column
+     * @return the new Playlist object
+     */
     addPlaylist(name, sort, columns) {
         const server = this;
         const tree = document.getElementById("playlist-template").cloneNode(true);
@@ -198,6 +223,11 @@ class Server extends EventTarget {
         return playlist;
     }
 
+    /**
+     * Add a new Partition to the internal list stored in this.partitions
+     * @param name the name of the Partition
+     * @return the new Partition object
+     */
     addPartition(name) {
         const server = this;
         const tree = document.getElementById("partition-template").cloneNode(true);
@@ -381,8 +411,14 @@ class Server extends EventTarget {
             });
         });
         server.#addArtworkListener(tree, partition);
+        return partition;
     }
 
+    /**
+     * Add a new listener which loads artwork for the playing/selected tracks.
+     * @param tree the container element to search for elements to load into
+     * @param tracklist the TrackList
+     */
     #addArtworkListener(tree, tracklist) {
         tracklist.addEventListener("select", (e) => {
             let t = tracklist.getSelection();
@@ -403,6 +439,13 @@ class Server extends EventTarget {
         });
     }
 
+    /**
+     * Internal method to actually load the artwork
+     * @param tree the container element to search for elements to load into
+     * @param the selector to search within "tree"
+     * @param tracklist the TrackList
+     * @param file the filename to load the artwork from
+     */
     #loadArtwork(tree, selector, tracklist, file) {
         if (!file) {
             tree.querySelectorAll(selector).forEach((e) => {
