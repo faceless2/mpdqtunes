@@ -456,16 +456,18 @@ class TrackList extends EventTarget {
             if (numColumns == 1) {
                 this.columns[col] = availWidth;
             } else if (Math.abs(diff) > 0) {
-                let otherdiff = -diff / (numColumns - 1);
+                // Add "diff" to column "col" and remove "diff" from column after col
+                let colwidth;
                 for (let c in this.columns) {
-                    this.columns[c] = Math.max(minWidth, this.columns[c] + (c == col ? diff : otherdiff));
-                    currentWidth += this.columns[c];
-                }
-                for (let c in this.columns) {
-                    if (currentWidth > availWidth) {
-                        let diff = Math.max(minWidth, this.columns[c] + availWidth - currentWidth) - this.columns[c];
-                        this.columns[c] += diff;
-                        currentWidth += diff;
+                    if (c == col) {
+                        colwidth = this.columns[c];
+                    } else if (typeof(colwidth) == "number") {
+                        let nextcolwidth = this.columns[c];
+                        diff = Math.max(minWidth, colwidth + diff) - colwidth;
+                        diff = nextcolwidth - Math.max(minWidth, nextcolwidth - diff);
+                        this.columns[col] += diff;
+                        this.columns[c] -= diff;
+                        break;
                     }
                 }
             }
